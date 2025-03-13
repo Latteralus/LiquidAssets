@@ -1,0 +1,214 @@
+/* General styling */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  
+  body {
+    font-family: 'Courier New', monospace;
+    background-color: #222;
+    color: #ddd;
+    overflow: hidden;
+  }
+  
+  #game-container {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    grid-template-columns: 1fr 300px;
+    grid-template-areas:
+      "header header"
+      "main sidebar";
+    width: 100vw;
+    height: 100vh;
+    padding: 10px;
+  }
+  
+  /* Header styling */
+  header {
+    grid-area: header;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background-color: #333;
+    border-bottom: 2px solid #555;
+  }
+  
+  header h1 {
+    color: #ffcc00;
+    font-size: 24px;
+  }
+  
+  #game-stats {
+    display: flex;
+    gap: 20px;
+  }
+  
+  /* Main game area styling */
+  main {
+    grid-area: main;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+  }
+  
+  #game-area {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 10px;
+  }
+  
+  #venue-view {
+    flex: 3;
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    min-height: 300px;
+  }
+  
+  #venue-canvas {
+    width: 100%;
+    height: 100%;
+  }
+  
+  #game-log {
+    flex: 2;
+    background-color: #1a1a1a;
+    border: 1px solid #444;
+    overflow-y: auto;
+    padding: 10px;
+    min-height: 150px;
+    max-height: 300px;
+  }
+  
+  .log-entry {
+    margin-bottom: 5px;
+    line-height: 1.4;
+  }
+  
+  .log-entry.info {
+    color: #5cb3fd;
+  }
+  
+  .log-entry.warning {
+    color: #f0ad4e;
+  }
+  
+  .log-entry.error {
+    color: #d9534f;
+  }
+  
+  .log-entry.success {
+    color: #5cb85c;
+  }
+  
+  /* Command interface styling */
+  #command-interface {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #1a1a1a;
+    border: 1px solid #444;
+  }
+  
+  #command-input-container {
+    display: flex;
+    align-items: center;
+  }
+  
+  .prompt {
+    color: #ffcc00;
+    margin-right: 5px;
+    font-weight: bold;
+  }
+  
+  #command-input {
+    flex: 1;
+    background-color: #2a2a2a;
+    border: none;
+    padding: 5px 10px;
+    color: #ddd;
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+  }
+  
+  #command-input:focus {
+    outline: none;
+    box-shadow: 0 0 2px #ffcc00;
+  }
+  
+  #suggestions {
+    margin-top: 5px;
+    color: #888;
+    font-size: 14px;
+  }
+  
+  /* Info panel styling */
+  #info-panel {
+    grid-area: sidebar;
+    background-color: #2a2a2a;
+    border-left: 2px solid #444;
+    padding: 10px;
+    overflow-y: auto;
+  }
+  
+  .panel-section {
+    margin-bottom: 20px;
+  }
+  
+  .panel-section h3 {
+    color: #ffcc00;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 5px;
+  }
+  
+  #staff-list, #quick-stats {
+    list-style-type: none;
+  }
+  
+  #staff-list li, #quick-stats li {
+    margin-bottom: 5px;
+    padding: 5px;
+    border-bottom: 1px dotted #444;
+  }
+  
+  /* Menu styling */
+  .menu {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #333;
+    padding: 30px;
+    border: 2px solid #555;
+    text-align: center;
+    display: none; /* Hidden by default */
+  }
+  
+  .menu h2 {
+    color: #ffcc00;
+    margin-bottom: 30px;
+  }
+  
+  .menu button {
+    display: block;
+    width: 200px;
+    margin: 10px auto;
+    padding: 10px;
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    color: #ddd;
+    font-family: 'Courier New', monospace;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .menu button:hover {
+    background-color: #444;
+    color: #ffcc00;
+  }
+  
+  .menu button:active {
+    background-color: #555;
+  }

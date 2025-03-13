@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Liquid Assets</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game-container">
+    <header>
+      <h1>Liquid Assets</h1>
+      <div id="game-stats">
+        <div id="cash">Cash: €<span id="cash-value">10000</span></div>
+        <div id="date">Date: <span id="date-value">Jan 1, 2025</span></div>
+        <div id="current-location">Location: <span id="location-value">London</span></div>
+      </div>
+    </header>
+    
+    <main>
+      <div id="game-area">
+        <div id="venue-view">
+          <!-- This will contain the top-down view of the establishment -->
+          <canvas id="venue-canvas" width="600" height="400"></canvas>
+        </div>
+        
+        <div id="game-log">
+          <div id="log-container">
+            <!-- Game events and feedback will be displayed here -->
+            <p class="log-entry">Welcome to Liquid Assets! Type 'help' to see available commands.</p>
+          </div>
+        </div>
+      </div>
+      
+      <div id="command-interface">
+        <div id="command-input-container">
+          <span class="prompt">&gt;</span>
+          <input type="text" id="command-input" placeholder="Enter command..." autocomplete="off">
+        </div>
+        <div id="suggestions"></div>
+      </div>
+    </main>
+    
+    <aside id="info-panel">
+      <div class="panel-section">
+        <h3>Staff</h3>
+        <ul id="staff-list">
+          <!-- Staff list will be populated here -->
+        </ul>
+      </div>
+      
+      <div class="panel-section">
+        <h3>Quick Stats</h3>
+        <ul id="quick-stats">
+          <li>Customers Today: <span id="customers-today">0</span></li>
+          <li>Revenue Today: €<span id="revenue-today">0</span></li>
+          <li>Staff Morale: <span id="staff-morale">Good</span></li>
+          <li>Venue Popularity: <span id="venue-popularity">Low</span></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+  
+  <!-- Game menus -->
+  <div id="main-menu" class="menu">
+    <h2>Liquid Assets</h2>
+    <button id="new-game-btn">New Game</button>
+    <button id="load-game-btn">Load Game</button>
+    <button id="options-btn">Options</button>
+    <button id="exit-btn">Exit</button>
+  </div>
+  
+  <!-- Load game scripts -->
+  <script src="renderer.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/commands.js"></script>
+</body>
+</html>
