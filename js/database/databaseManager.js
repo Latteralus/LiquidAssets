@@ -573,9 +573,9 @@ async function createSampleMigration() {
  * Migration: Initial Schema
  * Created at: ${new Date().toISOString()}
  */
-exports.up = async function(db) {
+ exports.up = async function(db) {
 
-Create venues table
+ Create venues table
   await db.run(\`
     CREATE TABLE venues (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -755,9 +755,9 @@ Create venues table
   await db.run(\`CREATE INDEX idx_events_venue_id ON events(venue_id);\`);
   await db.run(\`CREATE INDEX idx_settings_key ON settings(key);\`);
   await db.run(\`CREATE INDEX idx_settings_category ON settings(category);\`);
-};
+ };
 
-exports.down = async function(db) {
+ exports.down = async function(db) {
   // Drop tables in reverse order to avoid foreign key constraint issues
   await db.run('DROP TABLE IF EXISTS saved_games');
   await db.run('DROP TABLE IF EXISTS cities');
@@ -769,8 +769,8 @@ exports.down = async function(db) {
   await db.run('DROP TABLE IF EXISTS staff');
   await db.run('DROP TABLE IF EXISTS venues');
   await db.run('DROP TABLE IF EXISTS players');
-};
-`;
+ };
+ `;
 
   fs.writeFileSync(filePath, migrationContent.trim());
   console.log(`Created sample migration: ${filePath}`);
