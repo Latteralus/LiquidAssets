@@ -11,12 +11,16 @@ const EventManager = require('./modules/eventManager');
 const CityManager = require('./modules/cityManager');
 const UIManager = require('./ui/uiManager');
 const CommandProcessor = require('./ui/commandProcessor');
+const NotificationManager = require('./ui/notificationManager');
 
 class Game {
   constructor() {
     this.initializeManagers();
     this.initializeGameState();
     this.setupEventListeners();
+    
+    // Set up global logging function that uses NotificationManager
+    window.logToConsole = this.logToConsole.bind(this);
   }
   
   initializeManagers() {
@@ -29,6 +33,7 @@ class Game {
     this.financialManager = new FinancialManager(this);
     this.inventoryManager = new InventoryManager(this);
     this.eventManager = new EventManager(this);
+    this.notificationManager = new NotificationManager(this);
     this.uiManager = new UIManager(this);
     this.commandProcessor = new CommandProcessor(this);
   }
@@ -58,6 +63,15 @@ class Game {
     this.state.currentVenue = initialVenue;
   }
   
+  initializeUI() {
+    // Initialize notification system
+    if (this.notificationManager) {
+      this.notificationManager.initialize('notification-container');
+    }
+    
+    // Other UI initialization...
+  }
+  
   setupEventListeners() {
     // Set up event listeners for UI interactions
     // This will be handled by the UI manager
@@ -68,10 +82,13 @@ class Game {
     // Reset all state
     this.initializeGameState();
     
+    // Initialize UI components
+    this.initializeUI();
+    
     // Show initial message
-    window.logToConsole('Welcome to Liquid Assets! Your journey as a venue owner begins now.', 'info');
-    window.logToConsole(`You have €${this.state.player.cash.toFixed(2)} to start your business in ${this.state.currentCity}.`, 'info');
-    window.logToConsole('Type \'help\' to see available commands.', 'info');
+    this.notificationManager.info('Welcome to Liquid Assets! Your journey as a venue owner begins now.');
+    this.notificationManager.financial(`You have €${this.state.player.cash.toFixed(2)} to start your business in ${this.state.currentCity}.`);
+    this.notificationManager.system('Type \'help\' to see available commands.');
     
     // Start the game clock
     this.timeManager.startGameClock();
@@ -94,16 +111,16 @@ class Game {
       window.api.saveGame(gameData)
         .then(result => {
           if (result.success) {
-            window.logToConsole('Game saved successfully!', 'success');
+            this.notificationManager.success('Game saved successfully!');
           } else {
-            window.logToConsole('Failed to save game.', 'error');
+            this.notificationManager.error('Failed to save game.');
           }
         })
         .catch(err => {
-          window.logToConsole('Error saving game: ' + err.message, 'error');
+          this.notificationManager.error('Error saving game: ' + err.message);
         });
     } else {
-      window.logToConsole('Save functionality not available.', 'error');
+      this.notificationManager.error('Save functionality not available.');
     }
   }
   
@@ -135,7 +152,10 @@ class Game {
           // Update UI
           this.uiManager.updateDisplay();
           
-          window.logToConsole('Game loaded successfully!', 'success');
+          this.notificationManager.success('Game loaded successfully!');
+          
+          // Initialize UI components in case they weren't already
+          this.initializeUI();
           
           // Resume game clock if it was running
           if (!this.state.settings.gamePaused) {
@@ -144,15 +164,15 @@ class Game {
           
           return true;
         } else {
-          window.logToConsole('No saved game found.', 'warning');
+          this.notificationManager.warning('No saved game found.');
           return false;
         }
       } catch (err) {
-        window.logToConsole('Error loading game: ' + err.message, 'error');
+        this.notificationManager.error('Error loading game: ' + err.message);
         return false;
       }
     } else {
-      window.logToConsole('Load functionality not available.', 'error');
+      this.notificationManager.error('Load functionality not available.');
       return false;
     }
   }
@@ -169,6 +189,54 @@ class Game {
       this.customerManager.updateCustomers();
       this.staffManager.updateStaff();
       this.eventManager.checkForRandomEvents();
+    }
+  }
+  
+  // Replace the global logToConsole with a method that uses NotificationManager
+  logToConsole(message, type = '') {
+    // Map legacy types to notification categories
+    const typeMap = {
+      '': 'INFO',
+      'info': 'INFO',
+      'success': 'SUCCESS',
+      'warning': 'WARNING',
+      'error': 'ERROR'
+    };
+    
+    // Determine the appropriate category based on message content
+    let category = typeMap[type] || 'INFO';
+    
+    // Try to categorize based on content if not specified
+    if (category === 'INFO') {
+      if (message.includes('customer') || message.includes('group of')) {
+        category = 'CUSTOMER';
+      } else if (message.includes('staff') || message.includes('hired') || message.includes('fired')) {
+        category = 'STAFF';
+      } else if (message.includes('€') || message.includes('cash') || message.includes('revenue') || message.includes('expense')) {
+        category = 'FINANCIAL';
+      } else if (message.includes('event') || message.includes('inspection')) {
+        category = 'EVENT';
+      }
+    }
+    
+    // Use our notification system
+    if (this.notificationManager) {
+      this.notificationManager.addNotification(message, category);
+    }
+    
+    // Fallback to legacy log output
+    const logContainer = document.getElementById('log-container');
+    if (logContainer) {
+      const logEntry = document.createElement('p');
+      logEntry.textContent = message;
+      logEntry.className = 'log-entry';
+      
+      if (type) {
+        logEntry.classList.add(type);
+      }
+      
+      logContainer.appendChild(logEntry);
+      logContainer.scrollTop = logContainer.scrollHeight;
     }
   }
 }

@@ -1,4 +1,6 @@
-Last Updated: 3/12/2025 10:17pm MST
+# docs/filestructure.md
+
+Last Updated: March 13, 2025 5:45pm MST
 
 liquidassets/
 ├── main.js
@@ -11,6 +13,10 @@ liquidassets/
 │   │   └── icon.png
 │   ├── images/
 │   └── sounds/
+├── docs/
+│   ├── plan.md
+│   ├── filestructure.md
+│   └── todo.md
 └── js/
     ├── game.js
     ├── config.js
@@ -42,7 +48,8 @@ liquidassets/
     │   ├── commandProcessor.js
     │   ├── renderEngine.js
     │   ├── menuManager.js
-    │   └── menuComponents.js
+    │   ├── menuComponents.js
+    │   └── notificationManager.js
     └── utils/
         ├── helpers.js
         └── dataStore.js
