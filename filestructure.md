@@ -17,6 +17,10 @@ liquidassets/
     ├── modules/
     │   ├── timeManager.js
     │   ├── venueManager.js
+    │   ├── venue/
+    │   │   ├── venueCreator.js
+    │   │   ├── layoutGenerator.js
+    │   │   └── venueUpgrader.js
     │   ├── staffManager.js
     │   ├── customerManager.js
     │   │   ├── customer/
@@ -38,8 +42,7 @@ liquidassets/
     │   ├── commandProcessor.js
     │   ├── renderEngine.js
     │   ├── menuManager.js
-    │   ├── menuComponents.js
-    │   └── menuManager.js
+    │   └── menuComponents.js
     └── utils/
         ├── helpers.js
         └── dataStore.js
