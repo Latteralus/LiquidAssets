@@ -25,7 +25,35 @@
         </div>
         
         <div id="game-log">
-          <!-- New notification container -->
+          <!-- Notification system container -->
+          <div id="notification-filters">
+            <button class="filter-btn active" data-type="all" title="Show all notifications">
+              <span>All</span>
+            </button>
+            <button class="filter-btn" data-type="info" title="Show information messages">
+              <span>Info</span>
+            </button>
+            <button class="filter-btn" data-type="success" title="Show success messages">
+              <span>Success</span>
+            </button>
+            <button class="filter-btn" data-type="warning" title="Show warnings">
+              <span>Warning</span>
+            </button>
+            <button class="filter-btn" data-type="error" title="Show errors">
+              <span>Error</span>
+            </button>
+            <button class="filter-btn" data-type="event" title="Show events">
+              <span>Events</span>
+            </button>
+            <button class="filter-btn" data-type="financial" title="Show financial notifications">
+              <span>Financial</span>
+            </button>
+            <button class="filter-btn clear-btn" title="Clear notifications">
+              <span>Clear</span>
+            </button>
+          </div>
+          
+          <!-- Notification container where messages appear -->
           <div id="notification-container"></div>
           
           <!-- Legacy log container - will be phased out -->
@@ -49,12 +77,23 @@
         <button id="inventory-btn" class="action-button">Inventory</button>
         <button id="finance-btn" class="action-button">Finances</button>
         <button id="marketing-btn" class="action-button">Marketing</button>
+        <button id="venue-btn" class="action-button">Venue</button>
         <button id="help-btn" class="action-button">Help</button>
         <button id="menu-btn" class="action-button">Menu</button>
       </div>
     </main>
     
     <aside id="info-panel">
+      <div class="panel-section">
+        <h3>Current Venue</h3>
+        <div id="venue-info">
+          <p>Name: <span id="venue-name">None selected</span></p>
+          <p>Type: <span id="venue-type">-</span></p>
+          <p>City: <span id="venue-city">-</span></p>
+          <p>Size: <span id="venue-size">-</span></p>
+        </div>
+      </div>
+      
       <div class="panel-section">
         <h3>Staff</h3>
         <ul id="staff-list">
@@ -92,7 +131,173 @@
     <button id="exit-btn">Exit</button>
   </div>
   
-  <!-- Dynamic menus created by MenuManager will be appended to the body -->
+  <!-- Venue creation menu -->
+  <div id="venue-creation-menu" class="menu" style="display: none;">
+    <h2>Create New Venue</h2>
+    <div class="form-group">
+      <label for="venue-name-input">Venue Name:</label>
+      <input type="text" id="venue-name-input" class="menu-input" placeholder="The Blue Lagoon">
+    </div>
+    <div class="form-group">
+      <label for="venue-type-select">Venue Type:</label>
+      <select id="venue-type-select" class="menu-input">
+        <option value="Bar">Bar</option>
+        <option value="Nightclub">Nightclub</option>
+        <option value="Restaurant">Restaurant</option>
+        <option value="Fast Food">Fast Food</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="venue-city-select">City:</label>
+      <select id="venue-city-select" class="menu-input">
+        <option value="London">London</option>
+        <option value="Berlin">Berlin</option>
+        <option value="Paris">Paris</option>
+        <option value="Madrid">Madrid</option>
+        <option value="Rome">Rome</option>
+      </select>
+    </div>
+    <button id="create-venue-btn" class="full-button">Create Venue</button>
+    <button id="cancel-venue-btn" class="full-button">Cancel</button>
+  </div>
+  
+  <!-- Staff management menu -->
+  <div id="staff-menu" class="menu" style="display: none;">
+    <h2>Staff Management</h2>
+    <div class="tab-container">
+      <div class="tab active" data-tab="current-staff">Current Staff</div>
+      <div class="tab" data-tab="hire-staff">Hire Staff</div>
+    </div>
+    <div class="menu-content">
+      <div id="current-staff-tab" class="tab-content">
+        <div class="staff-list">
+          <!-- Current staff will be listed here -->
+        </div>
+      </div>
+      <div id="hire-staff-tab" class="tab-content" style="display: none;">
+        <div class="form-group">
+          <label for="staff-type-select">Staff Type:</label>
+          <select id="staff-type-select" class="menu-input">
+            <option value="bartender">Bartender</option>
+            <option value="waiter">Waiter</option>
+            <option value="cook">Cook</option>
+            <option value="bouncer">Bouncer</option>
+            <option value="dj">DJ</option>
+            <option value="manager">Manager</option>
+            <option value="cleaner">Cleaner</option>
+          </select>
+        </div>
+        <div class="staff-list" id="candidate-list">
+          <!-- Staff candidates will be listed here -->
+        </div>
+      </div>
+    </div>
+    <button id="close-staff-menu-btn" class="full-button">Close</button>
+  </div>
+  
+  <!-- Inventory management menu -->
+  <div id="inventory-menu" class="menu" style="display: none;">
+    <h2>Inventory Management</h2>
+    <div class="tab-container">
+      <div class="tab active" data-tab="drinks-inventory">Drinks</div>
+      <div class="tab" data-tab="food-inventory">Food</div>
+      <div class="tab" data-tab="equipment-inventory">Equipment</div>
+      <div class="tab" data-tab="order-inventory">Order</div>
+    </div>
+    <div class="menu-content">
+      <!-- Tab content for each inventory type will be dynamically populated -->
+    </div>
+    <button id="close-inventory-menu-btn" class="full-button">Close</button>
+  </div>
+  
+  <!-- Financial management menu -->
+  <div id="finance-menu" class="menu" style="display: none;">
+    <h2>Financial Management</h2>
+    <div class="tab-container">
+      <div class="tab active" data-tab="financial-summary">Summary</div>
+      <div class="tab" data-tab="financial-reports">Reports</div>
+      <div class="tab" data-tab="financial-transactions">Transactions</div>
+    </div>
+    <div class="menu-content">
+      <!-- Tab content for each financial section will be dynamically populated -->
+    </div>
+    <button id="close-finance-menu-btn" class="full-button">Close</button>
+  </div>
+  
+  <!-- Marketing management menu -->
+  <div id="marketing-menu" class="menu" style="display: none;">
+    <h2>Marketing Management</h2>
+    <div class="tab-container">
+      <div class="tab active" data-tab="marketing-campaigns">Campaigns</div>
+      <div class="tab" data-tab="marketing-promotions">Promotions</div>
+      <div class="tab" data-tab="marketing-events">Events</div>
+    </div>
+    <div class="menu-content">
+      <!-- Tab content for each marketing section will be dynamically populated -->
+    </div>
+    <button id="close-marketing-menu-btn" class="full-button">Close</button>
+  </div>
+  
+  <!-- Venue management menu -->
+  <div id="venue-menu" class="menu" style="display: none;">
+    <h2>Venue Management</h2>
+    <div class="tab-container">
+      <div class="tab active" data-tab="venue-settings">Settings</div>
+      <div class="tab" data-tab="venue-stats">Statistics</div>
+      <div class="tab" data-tab="venue-upgrade">Upgrade</div>
+    </div>
+    <div class="menu-content">
+      <div id="venue-settings-tab" class="tab-content">
+        <div class="form-group">
+          <label for="venue-hours-open">Opening Hour:</label>
+          <input type="number" id="venue-hours-open" class="menu-input" min="0" max="23" value="10">
+        </div>
+        <div class="form-group">
+          <label for="venue-hours-close">Closing Hour:</label>
+          <input type="number" id="venue-hours-close" class="menu-input" min="0" max="23" value="22">
+        </div>
+        <div class="form-group">
+          <label for="venue-music">Music Volume:</label>
+          <input type="range" id="venue-music" class="menu-input" min="0" max="100" value="50">
+          <span id="venue-music-value">50%</span>
+        </div>
+        <div class="form-group">
+          <label for="venue-lighting">Lighting Level:</label>
+          <input type="range" id="venue-lighting" class="menu-input" min="0" max="100" value="70">
+          <span id="venue-lighting-value">70%</span>
+        </div>
+        <div class="form-group">
+          <label for="venue-entrance-fee">Entrance Fee (€):</label>
+          <input type="number" id="venue-entrance-fee" class="menu-input" min="0" step="0.5" value="0">
+        </div>
+        <button id="save-venue-settings-btn" class="full-button">Save Settings</button>
+        <button id="clean-venue-btn" class="full-button">Clean Venue</button>
+      </div>
+      <div id="venue-stats-tab" class="tab-content" style="display: none;">
+        <!-- Venue statistics will be dynamically loaded -->
+      </div>
+      <div id="venue-upgrade-tab" class="tab-content" style="display: none;">
+        <div id="venue-upgrade-info">
+          <!-- Upgrade information will be dynamically loaded -->
+        </div>
+        <button id="upgrade-venue-btn" class="full-button">Upgrade Venue</button>
+        <button id="sell-venue-btn" class="full-button danger">Sell Venue</button>
+      </div>
+    </div>
+    <button id="close-venue-menu-btn" class="full-button">Close</button>
+  </div>
+  
+  <!-- Modal overlay for confirmations -->
+  <div id="modal-overlay" class="modal-overlay">
+    <div id="confirm-dialog" class="menu">
+      <h2 id="confirm-title">Confirmation</h2>
+      <p id="confirm-message">Are you sure you want to proceed?</p>
+      <div>
+        <button id="confirm-yes-btn" class="action-button">Yes</button>
+        <button id="confirm-no-btn" class="action-button">No</button>
+      </div>
+    </div>
+  </div>
   
   <!-- Load game scripts -->
   <script src="renderer.js"></script>
