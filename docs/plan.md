@@ -70,4 +70,4 @@ End with a plan for distributing the game as a small Electron package. Provide s
 Note to AI !Important!:
 ALWAYS PRINT THE FULL FILE, NO SNIPPETS.
 All code files must be UNDER 700 lines (If more, break into several files).
-Read todo.md and filestructure.md (Keep these updated when possible/necessary)
+Read todo.md and structure.md (Keep these updated when possible/necessary)

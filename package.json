@@ -4,43 +4,44 @@
     "description": "A business simulation game inspired by White Dolphin Bar",
     "main": "main.js",
     "scripts": {
-      "start": "electron .",
-      "build": "electron-builder",
-      "test": "jest"
+        "start": "electron .",
+        "build": "electron-builder",
+        "test": "jest"
     },
     "author": "",
     "license": "MIT",
     "devDependencies": {
-      "electron": "^29.0.0",
-      "electron-builder": "^24.6.4",
-      "jest": "^29.7.0"
+        "electron": "^29.0.0",
+        "electron-builder": "^24.6.4",
+        "jest": "^29.7.0"
     },
     "dependencies": {
-      "electron-store": "^8.1.0"
+        "electron-store": "^8.1.0",
+        "sqlite3": "^5.1.7"
     },
     "build": {
-      "appId": "com.liquidassets.app",
-      "productName": "Liquid Assets",
-      "files": [
-        "**/*",
-        "!**/*.md"
-      ],
-      "directories": {
-        "buildResources": "assets"
-      },
-      "mac": {
-        "category": "public.app-category.games"
-      },
-      "win": {
-        "target": [
-          "nsis"
-        ]
-      },
-      "linux": {
-        "target": [
-          "AppImage"
+        "appId": "com.liquidassets.app",
+        "productName": "Liquid Assets",
+        "files": [
+            "**/*",
+            "!**/*.md"
         ],
-        "category": "Game"
-      }
+        "directories": {
+            "buildResources": "assets"
+        },
+        "mac": {
+            "category": "public.app-category.games"
+        },
+        "win": {
+            "target": [
+                "nsis"
+            ]
+        },
+        "linux": {
+            "target": [
+                "AppImage"
+            ],
+            "category": "Game"
+        }
     }
-  }
+}

@@ -1,6 +1,6 @@
 # docs/filestructure.md
 
-Last Updated: March 13, 2025 5:45pm MST
+Last Updated: March 13, 2025 8:30pm MST
 
 liquidassets/
 ├── main.js
@@ -49,7 +49,13 @@ liquidassets/
     │   ├── renderEngine.js
     │   ├── menuManager.js
     │   ├── menuComponents.js
-    │   └── notificationManager.js
+    │   ├── notificationManager.js
+    │   └── render/
+    │       ├── index.js
+    │       ├── venueRenderer.js
+    │       ├── entityRenderer.js
+    │       ├── animationManager.js
+    │       └── layoutRenderer.js
     └── utils/
         ├── helpers.js
         └── dataStore.js
