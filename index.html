@@ -39,6 +39,15 @@
         </div>
         <div id="suggestions"></div>
       </div>
+      
+      <div id="button-bar">
+        <button id="staff-btn" class="action-button">Staff</button>
+        <button id="inventory-btn" class="action-button">Inventory</button>
+        <button id="finance-btn" class="action-button">Finances</button>
+        <button id="marketing-btn" class="action-button">Marketing</button>
+        <button id="help-btn" class="action-button">Help</button>
+        <button id="menu-btn" class="action-button">Menu</button>
+      </div>
     </main>
     
     <aside id="info-panel">
@@ -58,6 +67,15 @@
           <li>Venue Popularity: <span id="venue-popularity">Low</span></li>
         </ul>
       </div>
+      
+      <div class="panel-section">
+        <h3>Venue Status</h3>
+        <ul id="venue-stats">
+          <li>Cleanliness: <div class="progress-bar"><div id="cleanliness-bar" style="width: 100%"></div></div></li>
+          <li>Atmosphere: <div class="progress-bar"><div id="atmosphere-bar" style="width: 50%"></div></div></li>
+          <li>Service Quality: <div class="progress-bar"><div id="service-bar" style="width: 50%"></div></div></li>
+        </ul>
+      </div>
     </aside>
   </div>
   
@@ -70,10 +88,10 @@
     <button id="exit-btn">Exit</button>
   </div>
   
+  <!-- Dynamic menus created by MenuManager will be appended to the body -->
+  
   <!-- Load game scripts -->
   <script src="renderer.js"></script>
   <script src="js/game.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/commands.js"></script>
 </body>
 </html>

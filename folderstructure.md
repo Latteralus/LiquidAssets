@@ -1,6 +1,6 @@
 Last Updated: 3/12/2025 10:17pm MST
 
-liquid-assets/
+liquidassets/
 ├── main.js
 ├── preload.js
 ├── index.html
@@ -19,7 +19,17 @@ liquid-assets/
     │   ├── venueManager.js
     │   ├── staffManager.js
     │   ├── customerManager.js
+    │   │   ├── customer/
+    │   │   │   ├── customerBehavior.js
+    │   │   │   ├── customerGenerator.js
+    │   │   │   ├── customerOrders.js
+    │   │   │   └── customerSatisfaction.js
     │   ├── financialManager.js
+    │   │   ├── finances/
+    │   │   │   ├── expenseManager.js
+    │   │   │   ├── revenueManager.js
+    │   │   │   ├── transactionManager.js
+    │   │   │   └── reportingManager.js
     │   ├── inventoryManager.js
     │   ├── eventManager.js
     │   └── cityManager.js
@@ -27,6 +37,8 @@ liquid-assets/
     │   ├── uiManager.js
     │   ├── commandProcessor.js
     │   ├── renderEngine.js
+    │   ├── menuManager.js
+    │   ├── menuComponents.js
     │   └── menuManager.js
     └── utils/
         ├── helpers.js
