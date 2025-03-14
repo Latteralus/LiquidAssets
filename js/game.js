@@ -12,14 +12,17 @@ const CityManager = require('./modules/cityManager');
 const UIManager = require('./ui/uiManager');
 const CommandProcessor = require('./ui/commandProcessor');
 const NotificationManager = require('./ui/notificationManager');
-const { DatabaseManager } = require('./database/databaseManager');
+const dbAPI = require('./database/api');
 
 class Game {
   constructor() {
-    // Initialize game state first
+    // First initialize the database system
+    this.dbInitialized = false;
+    
+    // Initialize game state with default values
     this.initializeGameState();
     
-    // Then initialize managers with reference to the game instance
+    // Initialize managers with reference to the game instance
     this.initializeManagers();
     
     // Set up event listeners and UI components
@@ -29,27 +32,45 @@ class Game {
     window.logToConsole = this.logToConsole.bind(this);
   }
   
+  async initializeDatabase() {
+    try {
+      // Initialize the database system
+      await dbAPI.initialize();
+      this.dbInitialized = true;
+      
+      if (this.notificationManager) {
+        this.notificationManager.success("Database system initialized successfully.");
+      } else {
+        console.log("Database system initialized successfully.");
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Database initialization error:", error);
+      if (this.notificationManager) {
+        this.notificationManager.error("Failed to initialize database. Using in-memory storage as fallback.");
+      }
+      return false;
+    }
+  }
+  
   initializeManagers() {
     // First initialize managers that don't depend on others
     this.timeManager = new TimeManager(this);
     this.cityManager = new CityManager(this);
     this.notificationManager = new NotificationManager(this);
     
-    // Then initialize the database manager (if available)
-    try {
-      this.dbManager = DatabaseManager.getInstance();
-      this.dbManager.initialize()
-        .then(() => {
-          this.notificationManager.info("Database initialized successfully.");
-        })
-        .catch(error => {
-          console.error("Database initialization error:", error);
-          this.notificationManager.error("Database initialization failed. Falling back to file storage.");
-        });
-    } catch (error) {
-      console.error("Database manager error:", error);
-      this.notificationManager.warning("Database system not available. Using file storage.");
-    }
+    // Start database initialization (async)
+    this.initializeDatabase()
+      .then(success => {
+        if (success) {
+          // When database is ready, sync in-memory state with database
+          this.syncStateWithDatabase();
+        }
+      })
+      .catch(error => {
+        console.error("Database sync error:", error);
+      });
     
     // Initialize core game managers
     this.venueManager = new VenueManager(this);
@@ -85,6 +106,51 @@ class Game {
         autosave: true
       }
     };
+  }
+  
+  async syncStateWithDatabase() {
+    if (!this.dbInitialized) return;
+    
+    try {
+      // Get all settings from the database
+      const settings = await dbAPI.settings.getSettingsByCategory('game');
+      if (settings && Object.keys(settings).length > 0) {
+        // Update in-memory settings
+        this.state.settings = {
+          ...this.state.settings,
+          ...settings
+        };
+      }
+      
+      // If there's a current player, load their data
+      const playerId = await dbAPI.settings.getSetting('current_player_id');
+      if (playerId) {
+        const player = await dbAPI.gameService.getPlayer(playerId);
+        if (player) {
+          this.state.player = player;
+        }
+      }
+      
+      // If there's a current venue, load it
+      const currentVenueId = await dbAPI.settings.getSetting('current_venue_id');
+      if (currentVenueId) {
+        const venue = await dbAPI.venue.getVenueById(currentVenueId);
+        if (venue) {
+          this.state.currentVenue = venue;
+          this.state.currentCity = venue.city;
+        }
+      }
+      
+      // Update UI to reflect loaded data
+      if (this.uiManager) {
+        this.uiManager.updateDisplay();
+      }
+      
+      this.notificationManager.info("Game state synchronized with database.");
+    } catch (error) {
+      console.error("Error synchronizing state with database:", error);
+      this.notificationManager.error("Failed to sync game state with database.");
+    }
   }
   
   initializeUI() {
@@ -179,26 +245,92 @@ class Game {
     });
   }
   
-  startNewGame() {
-    // Reset game state
-    this.initializeGameState();
-    
-    // Initialize UI components
-    this.initializeUI();
-    
-    // Create initial venue
-    this.uiManager.showVenueCreationMenu();
-    
-    // Start the game clock
-    this.timeManager.startGameClock();
-    
-    // Hide main menu
-    document.getElementById('main-menu').style.display = 'none';
+  async startNewGame() {
+    try {
+      // Reset game state
+      this.initializeGameState();
+      
+      // Wait for database initialization if it's still in progress
+      if (!this.dbInitialized) {
+        await this.initializeDatabase();
+      }
+      
+      // Initialize UI components
+      this.initializeUI();
+      
+      // Create new player in database if using database
+      if (this.dbInitialized) {
+        // Get player name - for demo, we'll use "Player"
+        const playerName = "Player";
+        
+        // Create new player in database
+        const newGameState = await dbAPI.gameService.initializeNewGame(playerName);
+        
+        if (newGameState) {
+          // Update in-memory state with database state
+          this.state.player = newGameState.player;
+          this.state.settings = newGameState.settings;
+          
+          // Save the player ID in settings
+          await dbAPI.settings.setSetting('current_player_id', this.state.player.id, 'game');
+          
+          this.notificationManager.success("New game initialized in database.");
+        }
+      }
+      
+      // Show venue creation menu
+      this.uiManager.showVenueCreationMenu();
+      
+      // Start the game clock
+      this.timeManager.startGameClock();
+      
+      // Hide main menu
+      document.getElementById('main-menu').style.display = 'none';
+    } catch (error) {
+      console.error("Error starting new game:", error);
+      this.notificationManager.error("Failed to start new game. Please try again.");
+    }
   }
   
-  createInitialVenue(name, type, city) {
+  async createInitialVenue(name, type, city) {
     try {
-      const initialVenue = this.venueManager.createNewVenue(name, type, city);
+      let initialVenue;
+      
+      if (this.dbInitialized) {
+        // Create venue in database
+        initialVenue = await dbAPI.venueService.createNewVenue({
+          name,
+          type,
+          city,
+          size: 'small',
+          settings: {
+            openingHour: this.getDefaultOpeningHour(type),
+            closingHour: this.getDefaultClosingHour(type),
+            musicVolume: this.getDefaultMusicVolume(type),
+            lightingLevel: this.getDefaultLightingLevel(type),
+            entranceFee: 0,
+            customerCapacity: GAME_CONSTANTS.VENUE_SIZES.small.capacity,
+            decorationLevel: 1,
+            cleaningSchedule: 'daily'
+          },
+          stats: {
+            popularity: 10,
+            cleanliness: 100,
+            atmosphere: 50,
+            serviceQuality: 50,
+            totalCustomersServed: 0,
+            customerSatisfaction: 50,
+            peakHourCapacity: 0
+          }
+        }, this.state.player.id);
+        
+        // Save current venue ID in settings
+        await dbAPI.settings.setSetting('current_venue_id', initialVenue.id, 'game');
+      } else {
+        // Fallback to in-memory venue creation
+        initialVenue = this.venueManager.createNewVenue(name, type, city);
+      }
+      
       this.state.currentVenue = initialVenue;
       this.notificationManager.success(`Created your first venue: ${name}!`);
       
@@ -212,7 +344,47 @@ class Game {
     }
   }
   
-  saveGame() {
+  getDefaultOpeningHour(venueType) {
+    switch(venueType) {
+      case 'Restaurant': return 11; // Opens for lunch
+      case 'Fast Food': return 10; // Early opening
+      case 'Nightclub': return 20; // Evening opening
+      case 'Bar': return 16; // Late afternoon
+      default: return 10;
+    }
+  }
+  
+  getDefaultClosingHour(venueType) {
+    switch(venueType) {
+      case 'Restaurant': return 23; // Closes after dinner
+      case 'Fast Food': return 22; // Earlier closing
+      case 'Nightclub': return 4; // Very late closing (next day)
+      case 'Bar': return 2; // Late closing (next day)
+      default: return 22;
+    }
+  }
+  
+  getDefaultMusicVolume(venueType) {
+    switch(venueType) {
+      case 'Restaurant': return 30; // Quiet background music
+      case 'Fast Food': return 40; // Moderate background music
+      case 'Nightclub': return 80; // Loud music
+      case 'Bar': return 60; // Moderate-loud music
+      default: return 50;
+    }
+  }
+  
+  getDefaultLightingLevel(venueType) {
+    switch(venueType) {
+      case 'Restaurant': return 70; // Well-lit
+      case 'Fast Food': return 90; // Very bright
+      case 'Nightclub': return 30; // Dim lighting
+      case 'Bar': return 50; // Moderate lighting
+      default: return 60;
+    }
+  }
+  
+  async saveGame() {
     // Prepare game data to save
     const gameData = {
       player: this.state.player,
@@ -225,78 +397,142 @@ class Game {
       lastSaveTime: new Date().toISOString()
     };
     
-    // Save to storage (via preload)
-    if (window.api) {
-      window.api.saveGame(gameData)
-        .then(result => {
+    try {
+      if (this.dbInitialized) {
+        // Save via database
+        const saveResult = await dbAPI.gameService.saveGame(gameData, "Manual Save");
+        
+        if (saveResult.success) {
+          this.notificationManager.success('Game saved successfully to database!');
+        } else {
+          throw new Error("Database save failed");
+        }
+      } else {
+        // Fallback to storage API (via preload)
+        if (window.api) {
+          const result = await window.api.saveGame(gameData);
+          
           if (result.success) {
             this.notificationManager.success('Game saved successfully!');
           } else {
-            this.notificationManager.error('Failed to save game.');
+            throw new Error(result.error || "Save failed");
           }
-        })
-        .catch(err => {
-          this.notificationManager.error('Error saving game: ' + err.message);
-        });
-    } else {
-      this.notificationManager.error('Save functionality not available.');
+        } else {
+          this.notificationManager.error('Save functionality not available.');
+          return false;
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error saving game:', error);
+      this.notificationManager.error('Failed to save game: ' + error.message);
+      return false;
     }
-    
-    return true;
   }
   
   async loadGame() {
-    if (window.api) {
-      try {
-        const gameData = await window.api.loadGame();
+    try {
+      if (this.dbInitialized) {
+        // Get list of saved games
+        const savedGames = await dbAPI.gameService.getSavedGames();
         
-        if (gameData) {
-          // Restore player data
-          this.state.player = gameData.player;
-          
-          // Restore city data
-          this.cityManager.setCities(gameData.cities);
-          this.state.currentCity = gameData.currentCity;
-          
-          // Restore venue
-          this.state.currentVenue = gameData.currentVenue;
-          
-          // Restore time
-          this.timeManager.setGameTime(gameData.gameTime);
-          
-          // Restore staff
-          this.staffManager.setAllStaff(gameData.staff);
-          
-          // Restore settings
-          this.state.settings = gameData.settings;
-          
-          // Update UI
-          this.uiManager.updateDisplay();
-          
-          this.notificationManager.success('Game loaded successfully!');
-          
-          // Initialize UI components in case they weren't already
-          this.initializeUI();
-          
-          // Hide main menu
-          document.getElementById('main-menu').style.display = 'none';
-          
-          // Resume game clock if it was running
-          if (!this.state.settings.gamePaused) {
-            this.timeManager.startGameClock();
-          }
-          
-          return true;
-        } else {
-          this.notificationManager.warning('No saved game found.');
+        if (savedGames.length === 0) {
+          this.notificationManager.warning('No saved games found.');
           return false;
         }
-      } catch (err) {
-        this.notificationManager.error('Error loading game: ' + err.message);
-        return false;
+        
+        // For demonstration, load the most recent save
+        const mostRecentSave = savedGames[0];
+        const loadResult = await dbAPI.gameService.loadGame(mostRecentSave.id);
+        
+        if (loadResult.success) {
+          // Update in-memory state with loaded data
+          const { gameState } = loadResult;
+          
+          // Restore player data
+          this.state.player = gameState.player;
+          
+          // Restore city data
+          this.cityManager.setCities(gameState.cities);
+          this.state.currentCity = gameState.currentCity;
+          
+          // Restore venue
+          this.state.currentVenue = gameState.currentVenue;
+          
+          // Restore time
+          this.timeManager.setGameTime(gameState.gameTime);
+          
+          // Restore staff
+          this.staffManager.setAllStaff(gameState.staff);
+          
+          // Restore settings
+          this.state.settings = gameState.settings;
+          
+          // Save current player and venue IDs to settings
+          await dbAPI.settings.setSetting('current_player_id', this.state.player.id, 'game');
+          if (this.state.currentVenue) {
+            await dbAPI.settings.setSetting('current_venue_id', this.state.currentVenue.id, 'game');
+          }
+          
+          this.notificationManager.success('Game loaded successfully from database!');
+        } else {
+          throw new Error("Failed to load game data");
+        }
+      } else {
+        // Fallback to file storage via preload
+        if (window.api) {
+          const gameData = await window.api.loadGame();
+          
+          if (gameData) {
+            // Restore player data
+            this.state.player = gameData.player;
+            
+            // Restore city data
+            this.cityManager.setCities(gameData.cities);
+            this.state.currentCity = gameData.currentCity;
+            
+            // Restore venue
+            this.state.currentVenue = gameData.currentVenue;
+            
+            // Restore time
+            this.timeManager.setGameTime(gameData.gameTime);
+            
+            // Restore staff
+            this.staffManager.setAllStaff(gameData.staff);
+            
+            // Restore settings
+            this.state.settings = gameData.settings;
+            
+            this.notificationManager.success('Game loaded successfully from file!');
+          } else {
+            this.notificationManager.warning('No saved game found.');
+            return false;
+          }
+        } else {
+          this.notificationManager.error('Load functionality not available.');
+          return false;
+        }
       }
-    } else {
-      this.notificationManager.error('Load functionality not available.');
+      
+      // Update UI
+      this.uiManager.updateDisplay();
+      
+      // Initialize UI components in case they weren't already
+      this.initializeUI();
+      
+      // Hide main menu
+      document.getElementById('main-menu').style.display = 'none';
+      
+      // Resume game clock if it was running
+      if (!this.state.settings.gamePaused) {
+        this.timeManager.startGameClock();
+      }
+      
+      return true;
+    } catch (err) {
+      console.error('Error loading game:', err);
+      this.notificationManager.error('Error loading game: ' + err.message);
       return false;
     }
   }
@@ -360,7 +596,7 @@ class Game {
     }
   }
   
-  checkAutosave() {
+  async checkAutosave() {
     if (!this.state.settings.autosave) return;
     
     // Get current game time
@@ -368,7 +604,13 @@ class Game {
     
     // Autosave every in-game day at midnight
     if (gameTime.hour === 0 && gameTime.minute === 0) {
-      this.saveGame();
+      if (this.dbInitialized) {
+        // Use database for autosave
+        await this.saveGame();
+      } else {
+        // Fallback to file storage
+        this.saveGame();
+      }
     }
   }
   
@@ -381,15 +623,16 @@ class Game {
     // Confirm exit
     if (confirm("Are you sure you want to quit? Any unsaved progress will be lost.")) {
       if (confirm("Would you like to save before exiting?")) {
-        this.saveGame();
-        // Give time for save to complete
-        setTimeout(() => {
-          if (window.api) {
-            window.api.send('save-completed');
-          } else {
-            window.close();
-          }
-        }, 500);
+        this.saveGame().then(() => {
+          // Give time for save to complete
+          setTimeout(() => {
+            if (window.api) {
+              window.api.send('save-completed');
+            } else {
+              window.close();
+            }
+          }, 500);
+        });
       } else {
         if (window.api) {
           window.api.send('exit-confirmed', false);
