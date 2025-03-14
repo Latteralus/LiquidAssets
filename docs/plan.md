@@ -71,4 +71,4 @@ Note to AI !Important!:
  - ALWAYS PRINT THE FULL FILE, NO SNIPPETS.
  - All code files must be UNDER 700 lines (If more, break into several files).
  - Read todo.md, dbplan.md and structure.md (Keep these updated when possible/necessary)
- - Does not need to be backwards compatible.
+ - Does not need to be backwards compatible. There are no prior save games or history.
