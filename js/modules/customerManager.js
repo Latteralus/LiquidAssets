@@ -9,6 +9,7 @@ const { isDatabaseAvailable, withDatabaseFallback } = require('../database/dbUti
 const { createLogger } = require('../utils/logger');
 const eventBus = require('../utils/eventBus');
 const { generateEntityId } = require('../utils/idGenerator');
+const { validateEnum } = require('../utils/validator');
 const time = require('./time');
 
 /**
@@ -34,7 +35,7 @@ class CustomerManager {
     this.orders = new CustomerOrders(game);
     this.satisfaction = new CustomerSatisfaction(game);
 
-    // Set up event listeners
+    // Setup event listeners
     this.setupEventListeners();
     
     // Database availability
@@ -186,21 +187,23 @@ class CustomerManager {
    */
   async saveCustomerDataToDatabase() {
     try {
-      // In a real implementation, this would use a batch update
-      // For now, we update each customer one by one
-      const updates = [];
-      
-      for (const customer of this.game.state.customers) {
-        // Only update customers that have been in the system for a while
-        // to avoid excessive database operations
-        updates.push(this.game.dbAPI.customer.updateVisit(customer.id, {
-          status: customer.status,
-          satisfaction: customer.satisfaction,
-          totalSpent: customer.totalSpending || 0
-        }));
-      }
-      
-      await Promise.all(updates);
+      await withDatabaseFallback(
+        this.game,
+        'customer',
+        'batchUpdateVisits',
+        [this.game.state.customers.map(customer => ({
+          id: customer.id, 
+          updates: {
+            status: customer.status,
+            satisfaction: customer.satisfaction,
+            totalSpent: customer.totalSpending || 0
+          }
+        }))],
+        async () => {
+          this.logger.warning('Using in-memory fallback for customer updates', 'DATABASE');
+          return false;
+        }
+      );
     } catch (error) {
       this.logger.error(`Error saving customer data to database: ${error.message}`, 'DATABASE');
     }
@@ -217,22 +220,38 @@ class CustomerManager {
       customer.id = generateEntityId('customer');
     }
     
+    // Validate customer status
+    customer.status = validateEnum(
+      customer.status, 
+      ['entering', 'seated', 'ordering', 'waiting', 'eating', 'drinking', 'paying', 'leaving'], 
+      'entering'
+    );
+    
     // Save to database if available
     if (this.useDatabase) {
       try {
-        await this.game.dbAPI.customer.recordVisit({
-          venueId: customer.venueId,
-          customerType: customer.type,
-          groupSize: customer.groupSize,
-          status: customer.status || 'entering',
-          satisfaction: customer.satisfaction || 70,
-          totalSpent: customer.totalSpending || 0,
-          metadata: {
-            preferences: customer.preferences,
-            patience: customer.patience,
-            spendingBudget: customer.spendingBudget
+        await withDatabaseFallback(
+          this.game,
+          'customer',
+          'recordVisit',
+          [{
+            venueId: customer.venueId,
+            customerType: customer.type,
+            groupSize: customer.groupSize,
+            status: customer.status,
+            satisfaction: customer.satisfaction || 70,
+            totalSpent: customer.totalSpending || 0,
+            metadata: {
+              preferences: customer.preferences,
+              patience: customer.patience,
+              spendingBudget: customer.spendingBudget
+            }
+          }],
+          async () => {
+            this.logger.warning('Using in-memory fallback for customer creation', 'DATABASE');
+            return { id: customer.id };
           }
-        });
+        );
       } catch (error) {
         this.logger.error(`Error recording customer visit: ${error.message}`, 'DATABASE');
       }
@@ -258,9 +277,16 @@ class CustomerManager {
       
       // Update database if available
       if (this.useDatabase && customer.id) {
-        this.game.dbAPI.customer.updateVisit(customer.id, {
-          status: 'completed'
-        }).catch(error => {
+        withDatabaseFallback(
+          this.game,
+          'customer',
+          'updateVisit',
+          [customer.id, { status: 'completed' }],
+          async () => {
+            this.logger.warning('Using in-memory fallback for customer removal', 'DATABASE');
+            return true;
+          }
+        ).catch(error => {
           this.logger.error(`Error updating customer status: ${error.message}`, 'DATABASE');
         });
       }
