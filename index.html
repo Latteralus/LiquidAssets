@@ -15,6 +15,23 @@
         <div id="date">Date: <span id="date-value">Jan 1, 2025</span></div>
         <div id="current-location">Location: <span id="location-value">London</span></div>
       </div>
+      <div id="game-controls">
+        <button id="pause-btn" class="control-button" title="Pause/Resume Game">
+          <span class="icon">⏯️</span>
+        </button>
+        <div class="speed-control">
+          <button id="speed-down-btn" class="control-button" title="Decrease Game Speed">
+            <span class="icon">⏪</span>
+          </button>
+          <span id="game-speed-value">1x</span>
+          <button id="speed-up-btn" class="control-button" title="Increase Game Speed">
+            <span class="icon">⏩</span>
+          </button>
+        </div>
+        <button id="save-btn" class="control-button" title="Save Game">
+          <span class="icon">💾</span>
+        </button>
+      </div>
     </header>
     
     <main>
@@ -22,35 +39,53 @@
         <div id="venue-view">
           <!-- This will contain the top-down view of the establishment -->
           <canvas id="venue-canvas" width="600" height="400"></canvas>
+          <div id="canvas-tools">
+            <button id="zoom-in-btn" class="tool-button" title="Zoom In">+</button>
+            <button id="zoom-out-btn" class="tool-button" title="Zoom Out">-</button>
+            <button id="reset-view-btn" class="tool-button" title="Reset View">↺</button>
+          </div>
+          <div id="database-status" title="Database Connection Status">
+            <span class="status-icon">🔄</span>
+            <span class="status-text">Database: Connected</span>
+          </div>
         </div>
         
         <div id="game-log">
           <!-- Notification system container -->
-          <div id="notification-filters">
-            <button class="filter-btn active" data-type="all" title="Show all notifications">
-              <span>All</span>
-            </button>
-            <button class="filter-btn" data-type="info" title="Show information messages">
-              <span>Info</span>
-            </button>
-            <button class="filter-btn" data-type="success" title="Show success messages">
-              <span>Success</span>
-            </button>
-            <button class="filter-btn" data-type="warning" title="Show warnings">
-              <span>Warning</span>
-            </button>
-            <button class="filter-btn" data-type="error" title="Show errors">
-              <span>Error</span>
-            </button>
-            <button class="filter-btn" data-type="event" title="Show events">
-              <span>Events</span>
-            </button>
-            <button class="filter-btn" data-type="financial" title="Show financial notifications">
-              <span>Financial</span>
-            </button>
-            <button class="filter-btn clear-btn" title="Clear notifications">
-              <span>Clear</span>
-            </button>
+          <div id="notification-header">
+            <h3>Notifications</h3>
+            <div id="notification-filters">
+              <button class="filter-btn active" data-type="all" title="Show all notifications">
+                <span>All</span>
+              </button>
+              <button class="filter-btn" data-type="info" title="Show information messages">
+                <span>Info</span>
+              </button>
+              <button class="filter-btn" data-type="success" title="Show success messages">
+                <span>Success</span>
+              </button>
+              <button class="filter-btn" data-type="warning" title="Show warnings">
+                <span>Warning</span>
+              </button>
+              <button class="filter-btn" data-type="error" title="Show errors">
+                <span>Error</span>
+              </button>
+              <button class="filter-btn" data-type="event" title="Show events">
+                <span>Events</span>
+              </button>
+              <button class="filter-btn" data-type="customer" title="Show customer notifications">
+                <span>Customer</span>
+              </button>
+              <button class="filter-btn" data-type="staff" title="Show staff notifications">
+                <span>Staff</span>
+              </button>
+              <button class="filter-btn" data-type="financial" title="Show financial notifications">
+                <span>Financial</span>
+              </button>
+              <button class="filter-btn clear-btn" title="Clear notifications">
+                <span>Clear</span>
+              </button>
+            </div>
           </div>
           
           <!-- Notification container where messages appear -->
@@ -95,10 +130,12 @@
       </div>
       
       <div class="panel-section">
-        <h3>Staff</h3>
+        <h3>Staff <span id="staff-count" class="count-badge">0</span></h3>
         <ul id="staff-list">
           <!-- Staff list will be populated here -->
+          <li class="empty-list-message">No staff hired yet</li>
         </ul>
+        <button id="view-all-staff-btn" class="small-button">View All</button>
       </div>
       
       <div class="panel-section">
@@ -114,10 +151,34 @@
       <div class="panel-section">
         <h3>Venue Status</h3>
         <ul id="venue-stats">
-          <li>Cleanliness: <div class="progress-bar"><div id="cleanliness-bar" style="width: 100%"></div></div></li>
-          <li>Atmosphere: <div class="progress-bar"><div id="atmosphere-bar" style="width: 50%"></div></div></li>
-          <li>Service Quality: <div class="progress-bar"><div id="service-bar" style="width: 50%"></div></div></li>
+          <li>Cleanliness: 
+            <div class="progress-bar">
+              <div id="cleanliness-bar" class="progress-fill" style="width: 100%"></div>
+            </div>
+            <span id="cleanliness-value">100%</span>
+          </li>
+          <li>Atmosphere: 
+            <div class="progress-bar">
+              <div id="atmosphere-bar" class="progress-fill" style="width: 50%"></div>
+            </div>
+            <span id="atmosphere-value">50%</span>
+          </li>
+          <li>Service Quality: 
+            <div class="progress-bar">
+              <div id="service-bar" class="progress-fill" style="width: 50%"></div>
+            </div>
+            <span id="service-value">50%</span>
+          </li>
         </ul>
+      </div>
+      
+      <div class="panel-section">
+        <h3>Inventory Status</h3>
+        <div id="inventory-alerts">
+          <p id="no-alerts" class="subtle-text">No inventory alerts</p>
+          <!-- Inventory warnings will appear here -->
+        </div>
+        <button id="quick-inventory-btn" class="small-button">Manage</button>
       </div>
     </aside>
   </div>
@@ -157,6 +218,14 @@
         <option value="Rome">Rome</option>
       </select>
     </div>
+    <div class="city-info-box">
+      <h4 id="city-info-name">London</h4>
+      <ul id="city-info-details">
+        <li>Rent: <span id="city-rent">High</span></li>
+        <li>Customer Affluence: <span id="city-affluence">High</span></li>
+        <li>Regulations: <span id="city-regulations">Moderate</span></li>
+      </ul>
+    </div>
     <button id="create-venue-btn" class="full-button">Create Venue</button>
     <button id="cancel-venue-btn" class="full-button">Cancel</button>
   </div>
@@ -167,11 +236,13 @@
     <div class="tab-container">
       <div class="tab active" data-tab="current-staff">Current Staff</div>
       <div class="tab" data-tab="hire-staff">Hire Staff</div>
+      <div class="tab" data-tab="schedule-staff">Schedule</div>
     </div>
     <div class="menu-content">
       <div id="current-staff-tab" class="tab-content">
         <div class="staff-list">
           <!-- Current staff will be listed here -->
+          <p class="empty-state-message">No staff hired yet. Go to the "Hire Staff" tab to recruit employees.</p>
         </div>
       </div>
       <div id="hire-staff-tab" class="tab-content" style="display: none;">
@@ -189,6 +260,25 @@
         </div>
         <div class="staff-list" id="candidate-list">
           <!-- Staff candidates will be listed here -->
+          <div class="loading-indicator">Searching for candidates...</div>
+        </div>
+      </div>
+      <div id="schedule-staff-tab" class="tab-content" style="display: none;">
+        <div class="schedule-grid">
+          <div class="schedule-header">
+            <div class="schedule-cell">Staff</div>
+            <div class="schedule-cell">Mon</div>
+            <div class="schedule-cell">Tue</div>
+            <div class="schedule-cell">Wed</div>
+            <div class="schedule-cell">Thu</div>
+            <div class="schedule-cell">Fri</div>
+            <div class="schedule-cell">Sat</div>
+            <div class="schedule-cell">Sun</div>
+          </div>
+          <div id="schedule-rows">
+            <!-- Schedule rows will be added here -->
+            <p class="empty-state-message">No staff to schedule. Hire staff first.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -206,6 +296,23 @@
     </div>
     <div class="menu-content">
       <!-- Tab content for each inventory type will be dynamically populated -->
+      <div id="drinks-inventory-tab" class="tab-content">
+        <div class="inventory-filters">
+          <input type="text" id="drinks-filter" placeholder="Search drinks..." class="inventory-search">
+          <select id="drinks-sort" class="inventory-sort">
+            <option value="name-asc">Name (A-Z)</option>
+            <option value="name-desc">Name (Z-A)</option>
+            <option value="stock-asc">Stock (Low-High)</option>
+            <option value="stock-desc">Stock (High-Low)</option>
+            <option value="price-asc">Price (Low-High)</option>
+            <option value="price-desc">Price (High-Low)</option>
+          </select>
+        </div>
+        <div id="drinks-list" class="inventory-list">
+          <!-- Drinks list will be populated here -->
+          <div class="loading-indicator">Loading inventory...</div>
+        </div>
+      </div>
     </div>
     <button id="close-inventory-menu-btn" class="full-button">Close</button>
   </div>
@@ -220,6 +327,34 @@
     </div>
     <div class="menu-content">
       <!-- Tab content for each financial section will be dynamically populated -->
+      <div id="financial-summary-tab" class="tab-content">
+        <div class="finance-dashboard">
+          <div class="finance-card">
+            <h4>Daily Revenue</h4>
+            <div class="finance-amount" id="daily-revenue">€0.00</div>
+            <div class="finance-trend up" id="daily-revenue-trend">+0%</div>
+          </div>
+          <div class="finance-card">
+            <h4>Daily Expenses</h4>
+            <div class="finance-amount" id="daily-expenses">€0.00</div>
+            <div class="finance-trend down" id="daily-expenses-trend">+0%</div>
+          </div>
+          <div class="finance-card">
+            <h4>Profit Margin</h4>
+            <div class="finance-amount" id="profit-margin">0%</div>
+            <div class="finance-trend" id="profit-margin-trend">+0%</div>
+          </div>
+        </div>
+        <div class="finance-chart-container">
+          <div id="finance-chart"></div>
+        </div>
+        <div class="finance-breakdown">
+          <h4>Revenue Breakdown</h4>
+          <div id="revenue-breakdown"></div>
+          <h4>Expense Breakdown</h4>
+          <div id="expense-breakdown"></div>
+        </div>
+      </div>
     </div>
     <button id="close-finance-menu-btn" class="full-button">Close</button>
   </div>
@@ -234,6 +369,31 @@
     </div>
     <div class="menu-content">
       <!-- Tab content for each marketing section will be dynamically populated -->
+      <div id="marketing-campaigns-tab" class="tab-content">
+        <div class="marketing-dashboard">
+          <div class="marketing-status">
+            <h4>Current Campaign</h4>
+            <div id="current-campaign">None active</div>
+            <div id="campaign-effect">
+              <span class="effect-label">Effectiveness:</span>
+              <div class="progress-bar">
+                <div id="campaign-effectiveness-bar" class="progress-fill" style="width: 0%"></div>
+              </div>
+              <span id="campaign-effectiveness-value">0%</span>
+            </div>
+          </div>
+          <div class="marketing-actions">
+            <button id="new-campaign-btn" class="action-button">New Campaign</button>
+          </div>
+        </div>
+        <div class="marketing-list-container">
+          <h4>Available Campaigns</h4>
+          <div id="campaign-list" class="marketing-list">
+            <!-- Marketing campaigns will be listed here -->
+            <div class="loading-indicator">Loading campaigns...</div>
+          </div>
+        </div>
+      </div>
     </div>
     <button id="close-marketing-menu-btn" class="full-button">Close</button>
   </div>
@@ -270,21 +430,98 @@
           <label for="venue-entrance-fee">Entrance Fee (€):</label>
           <input type="number" id="venue-entrance-fee" class="menu-input" min="0" step="0.5" value="0">
         </div>
+        <div class="form-group checkbox-group">
+          <input type="checkbox" id="venue-autoclean" class="menu-checkbox">
+          <label for="venue-autoclean">Auto-clean when below 50% cleanliness</label>
+        </div>
         <button id="save-venue-settings-btn" class="full-button">Save Settings</button>
         <button id="clean-venue-btn" class="full-button">Clean Venue</button>
       </div>
       <div id="venue-stats-tab" class="tab-content" style="display: none;">
         <!-- Venue statistics will be dynamically loaded -->
+        <div class="stats-dashboard">
+          <div class="stats-card">
+            <h4>Total Customers</h4>
+            <div class="stats-value" id="total-customers">0</div>
+            <div class="stats-trend" id="customers-trend">+0%</div>
+          </div>
+          <div class="stats-card">
+            <h4>Customer Satisfaction</h4>
+            <div class="stats-value" id="customer-satisfaction">0%</div>
+            <div class="stats-trend" id="satisfaction-trend">+0%</div>
+          </div>
+          <div class="stats-card">
+            <h4>Reputation</h4>
+            <div class="stats-value" id="venue-reputation">0</div>
+            <div class="stats-trend" id="reputation-trend">+0%</div>
+          </div>
+        </div>
+        <div class="stats-chart-container">
+          <div id="customer-chart"></div>
+        </div>
+        <div class="customer-breakdown">
+          <h4>Customer Types</h4>
+          <div id="customer-type-breakdown"></div>
+        </div>
       </div>
       <div id="venue-upgrade-tab" class="tab-content" style="display: none;">
         <div id="venue-upgrade-info">
           <!-- Upgrade information will be dynamically loaded -->
+          <div class="current-venue-details">
+            <h4>Current Status</h4>
+            <p>Size: <span id="current-size">Small</span></p>
+            <p>Capacity: <span id="current-capacity">30 customers</span></p>
+            <p>Equipment Quality: <span id="current-quality">Standard</span></p>
+          </div>
+          <div class="upgrade-options">
+            <h4>Available Upgrades</h4>
+            <div class="upgrade-option">
+              <input type="radio" name="upgrade-type" id="upgrade-size" checked>
+              <label for="upgrade-size">
+                <span class="option-name">Increase Size</span>
+                <span class="option-description">Expands your venue to medium size, increasing capacity to 75 customers</span>
+                <span class="option-cost">€15,000</span>
+              </label>
+            </div>
+            <div class="upgrade-option">
+              <input type="radio" name="upgrade-type" id="upgrade-equipment">
+              <label for="upgrade-equipment">
+                <span class="option-name">Upgrade Equipment</span>
+                <span class="option-description">Improves all equipment to premium quality, enhancing customer satisfaction</span>
+                <span class="option-cost">€8,000</span>
+              </label>
+            </div>
+            <div class="upgrade-option">
+              <input type="radio" name="upgrade-type" id="upgrade-decoration">
+              <label for="upgrade-decoration">
+                <span class="option-name">Improve Decoration</span>
+                <span class="option-description">Enhances venue atmosphere and attracts higher-paying customers</span>
+                <span class="option-cost">€5,000</span>
+              </label>
+            </div>
+          </div>
         </div>
         <button id="upgrade-venue-btn" class="full-button">Upgrade Venue</button>
+        <button id="rename-venue-btn" class="full-button">Rename Venue</button>
         <button id="sell-venue-btn" class="full-button danger">Sell Venue</button>
       </div>
     </div>
     <button id="close-venue-menu-btn" class="full-button">Close</button>
+  </div>
+  
+  <!-- Notification detail view -->
+  <div id="notification-detail" class="menu" style="display: none;">
+    <h2>Notification Details</h2>
+    <div id="notification-content">
+      <!-- Notification details will be displayed here -->
+    </div>
+    <div id="related-notifications">
+      <h4>Related Notifications</h4>
+      <ul id="related-list">
+        <!-- Related notifications will be listed here -->
+      </ul>
+    </div>
+    <button id="close-notification-detail-btn" class="full-button">Close</button>
   </div>
   
   <!-- Modal overlay for confirmations -->
@@ -297,6 +534,27 @@
         <button id="confirm-no-btn" class="action-button">No</button>
       </div>
     </div>
+  </div>
+  
+  <!-- Database status modal -->
+  <div id="db-status-modal" class="menu" style="display: none;">
+    <h2>Database Status</h2>
+    <div id="db-status-content">
+      <div class="status-indicator">
+        <div class="indicator-circle" id="db-connection-indicator"></div>
+        <span id="db-connection-status">Connected</span>
+      </div>
+      <div id="db-stats">
+        <p>Tables: <span id="db-table-count">0</span></p>
+        <p>Migrations: <span id="db-migration-count">0</span> applied, <span id="db-pending-count">0</span> pending</p>
+        <p>Last Operation: <span id="db-last-operation">N/A</span></p>
+      </div>
+      <div id="db-actions">
+        <button id="db-migrate-btn" class="action-button">Run Migrations</button>
+        <button id="db-backup-btn" class="action-button">Backup Data</button>
+      </div>
+    </div>
+    <button id="close-db-status-btn" class="full-button">Close</button>
   </div>
   
   <!-- Load game scripts -->
