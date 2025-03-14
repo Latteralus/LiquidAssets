@@ -3,6 +3,7 @@
 const VenueCreator = require('./venue/venueCreator');
 const LayoutGenerator = require('./venue/layoutGenerator');
 const VenueUpgrader = require('./venue/venueUpgrader');
+const dbAPI = require('../database/api');
 const { VENUE_SIZES } = require('../config');
 
 class VenueManager {
@@ -11,30 +12,140 @@ class VenueManager {
     this.venueCreator = new VenueCreator(game);
     this.layoutGenerator = new LayoutGenerator();
     this.venueUpgrader = new VenueUpgrader(game);
+    
+    // Whether we're using database storage
+    this.useDatabase = false;
+    
+    // Check database availability
+    this.checkDatabaseAvailability();
   }
   
-  createNewVenue(name, type, city) {
-    return this.venueCreator.createNewVenue(name, type, city);
+  async checkDatabaseAvailability() {
+    // Check if database API is available and initialized
+    try {
+      const status = await dbAPI.getStatus();
+      this.useDatabase = status && status.initialized;
+      
+      if (this.useDatabase) {
+        console.log("VenueManager: Using database storage");
+      } else {
+        console.log("VenueManager: Using in-memory storage");
+      }
+    } catch (error) {
+      console.error("VenueManager: Database check failed", error);
+      this.useDatabase = false;
+    }
   }
   
-  getVenue(venueId) {
-    return this.game.state.player.venues.find(v => v.id === venueId);
+  async createNewVenue(name, type, city) {
+    try {
+      if (this.useDatabase) {
+        // Get player ID from game state
+        const playerId = this.game.state.player.id;
+        if (!playerId) {
+          throw new Error("Cannot create venue: Player ID not available");
+        }
+        
+        // Create venue using VenueService
+        const venue = await dbAPI.venueService.createNewVenue({
+          name,
+          type,
+          city,
+          size: 'small',
+          layout: this.layoutGenerator.generateVenueLayout(type, 'small'),
+          settings: {
+            openingHour: this.getDefaultOpeningHour(type),
+            closingHour: this.getDefaultClosingHour(type),
+            musicVolume: this.getDefaultMusicVolume(type),
+            lightingLevel: this.getDefaultLightingLevel(type),
+            entranceFee: 0,
+            customerCapacity: VENUE_SIZES.small.capacity,
+            decorationLevel: 1,
+            cleaningSchedule: 'daily',
+          },
+          stats: {
+            popularity: 10,
+            cleanliness: 100,
+            atmosphere: 50,
+            serviceQuality: 50,
+            totalCustomersServed: 0,
+            customerSatisfaction: 50,
+            peakHourCapacity: 0,
+            lastHealthInspection: null,
+            healthInspectionScore: 0
+          },
+          licences: {
+            alcohol: type !== 'Fast Food',
+            food: type === 'Restaurant' || type === 'Fast Food',
+            music: type === 'Nightclub' || type === 'Bar',
+            gambling: false
+          }
+        }, playerId);
+        
+        // Add to player's venues in memory for quick access
+        if (!this.game.state.player.venues) {
+          this.game.state.player.venues = [];
+        }
+        this.game.state.player.venues.push(venue);
+        
+        // Save current venue ID in settings
+        await dbAPI.settings.setSetting('current_venue_id', venue.id, 'game');
+        
+        // Update game state
+        this.game.state.currentVenue = venue;
+        
+        return venue;
+      } else {
+        // Fallback to using VenueCreator for in-memory venue creation
+        return this.venueCreator.createNewVenue(name, type, city);
+      }
+    } catch (error) {
+      console.error("Error creating venue:", error);
+      window.logToConsole(`Failed to create venue: ${error.message}`, 'error');
+      return null;
+    }
+  }
+  
+  async getVenue(venueId) {
+    try {
+      if (this.useDatabase) {
+        // Get venue from database
+        return await dbAPI.venue.getVenueById(venueId);
+      } else {
+        // Fallback to in-memory search
+        return this.game.state.player.venues.find(v => v.id === venueId);
+      }
+    } catch (error) {
+      console.error(`Error getting venue ${venueId}:`, error);
+      return null;
+    }
   }
   
   getCurrentVenue() {
     return this.game.state.currentVenue;
   }
   
-  setCurrentVenue(venueId) {
-    const venue = this.getVenue(venueId);
-    if (venue) {
-      this.game.state.currentVenue = venue;
-      return true;
+  async setCurrentVenue(venueId) {
+    try {
+      const venue = await this.getVenue(venueId);
+      if (venue) {
+        this.game.state.currentVenue = venue;
+        
+        // Update database setting if using database
+        if (this.useDatabase) {
+          await dbAPI.settings.setSetting('current_venue_id', venueId, 'game');
+        }
+        
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error(`Error setting current venue ${venueId}:`, error);
+      return false;
     }
-    return false;
   }
   
-  updateVenue(venue) {
+  async updateVenue(venue) {
     // Check if the venue is open based on time
     const isOpeningHours = this.isVenueOpen(venue);
     
@@ -46,7 +157,20 @@ class VenueManager {
     }
     
     // Update venue stats
-    this.updateVenueStats(venue);
+    await this.updateVenueStats(venue);
+    
+    // If using database, save changes back to database periodically
+    if (this.useDatabase && Math.random() < 0.05) { // 5% chance each update to reduce database load
+      try {
+        // Update venue stats in database
+        await dbAPI.venue.updateVenue(venue.id, { 
+          stats: venue.stats,
+          settings: venue.settings
+        });
+      } catch (error) {
+        console.error(`Error saving venue updates to database: ${error.message}`);
+      }
+    }
   }
   
   isVenueOpen(venue) {
@@ -61,7 +185,7 @@ class VenueManager {
     }
   }
   
-  updateVenueStats(venue) {
+  async updateVenueStats(venue) {
     // Gradually reduce cleanliness based on customer count
     const customerCount = this.game.customerManager ? 
                          this.game.customerManager.getCurrentCustomerCount() : 0;
@@ -143,37 +267,399 @@ class VenueManager {
     }
   }
   
-  // Delegate to VenueUpgrader
-  upgradeVenueSize(venueId) {
-    return this.venueUpgrader.upgradeVenueSize(venueId);
+  // Default settings methods to match Game.js
+  getDefaultOpeningHour(venueType) {
+    switch(venueType) {
+      case 'Restaurant': return 11; // Opens for lunch
+      case 'Fast Food': return 10; // Early opening
+      case 'Nightclub': return 20; // Evening opening
+      case 'Bar': return 16; // Late afternoon
+      default: return 10;
+    }
   }
   
-  setVenueName(venueId, newName) {
-    return this.venueUpgrader.setVenueName(venueId, newName);
+  getDefaultClosingHour(venueType) {
+    switch(venueType) {
+      case 'Restaurant': return 23; // Closes after dinner
+      case 'Fast Food': return 22; // Earlier closing
+      case 'Nightclub': return 4; // Very late closing (next day)
+      case 'Bar': return 2; // Late closing (next day)
+      default: return 22;
+    }
   }
   
-  setVenueHours(venueId, openingHour, closingHour) {
-    return this.venueUpgrader.setVenueHours(venueId, openingHour, closingHour);
+  getDefaultMusicVolume(venueType) {
+    switch(venueType) {
+      case 'Restaurant': return 30; // Quiet background music
+      case 'Fast Food': return 40; // Moderate background music
+      case 'Nightclub': return 80; // Loud music
+      case 'Bar': return 60; // Moderate-loud music
+      default: return 50;
+    }
   }
   
-  setMusicVolume(venueId, volume) {
-    return this.venueUpgrader.setMusicVolume(venueId, volume);
+  getDefaultLightingLevel(venueType) {
+    switch(venueType) {
+      case 'Restaurant': return 70; // Well-lit
+      case 'Fast Food': return 90; // Very bright
+      case 'Nightclub': return 30; // Dim lighting
+      case 'Bar': return 50; // Moderate lighting
+      default: return 60;
+    }
   }
   
-  setLightingLevel(venueId, level) {
-    return this.venueUpgrader.setLightingLevel(venueId, level);
+  // Delegate to VenueService/VenueUpgrader based on database availability
+  async upgradeVenueSize(venueId) {
+    try {
+      if (this.useDatabase) {
+        const venue = await this.getVenue(venueId);
+        if (!venue) {
+          throw new Error(`Venue with ID ${venueId} not found`);
+        }
+        
+        let newSize;
+        if (venue.size === 'small') {
+          newSize = 'medium';
+        } else if (venue.size === 'medium') {
+          newSize = 'large';
+        } else {
+          throw new Error("This venue is already at maximum size.");
+        }
+        
+        // Use VenueService for database upgrade
+        const result = await dbAPI.venueService.upgradeVenueSize(venueId, newSize);
+        
+        if (result.success) {
+          // Update in-memory venue
+          const updatedVenue = await this.getVenue(venueId);
+          
+          // If this is the current venue, update game state
+          if (this.game.state.currentVenue && this.game.state.currentVenue.id === venueId) {
+            this.game.state.currentVenue = updatedVenue;
+          }
+          
+          // Update venue in player's venues list
+          const venueIndex = this.game.state.player.venues.findIndex(v => v.id === venueId);
+          if (venueIndex !== -1) {
+            this.game.state.player.venues[venueIndex] = updatedVenue;
+          }
+          
+          window.logToConsole(result.message, 'success');
+          return true;
+        }
+        return false;
+      } else {
+        // Fallback to in-memory upgrade
+        return this.venueUpgrader.upgradeVenueSize(venueId);
+      }
+    } catch (error) {
+      console.error(`Error upgrading venue ${venueId}:`, error);
+      window.logToConsole(`Failed to upgrade venue: ${error.message}`, 'error');
+      return false;
+    }
   }
   
-  setEntranceFee(venueId, fee) {
-    return this.venueUpgrader.setEntranceFee(venueId, fee);
+  async setVenueName(venueId, newName) {
+    try {
+      if (this.useDatabase) {
+        const result = await dbAPI.venueService.renameVenue(venueId, newName);
+        
+        if (result) {
+          // Update in-memory venue
+          const updatedVenue = await this.getVenue(venueId);
+          
+          // If this is the current venue, update game state
+          if (this.game.state.currentVenue && this.game.state.currentVenue.id === venueId) {
+            this.game.state.currentVenue = updatedVenue;
+          }
+          
+          // Update venue in player's venues list
+          const venueIndex = this.game.state.player.venues.findIndex(v => v.id === venueId);
+          if (venueIndex !== -1) {
+            this.game.state.player.venues[venueIndex] = updatedVenue;
+          }
+          
+          window.logToConsole(`Venue renamed to "${newName}"`, 'success');
+          return true;
+        }
+        return false;
+      } else {
+        // Fallback to in-memory rename
+        return this.venueUpgrader.setVenueName(venueId, newName);
+      }
+    } catch (error) {
+      console.error(`Error renaming venue ${venueId}:`, error);
+      window.logToConsole(`Failed to rename venue: ${error.message}`, 'error');
+      return false;
+    }
   }
   
-  cleanVenue(venueId) {
-    return this.venueUpgrader.cleanVenue(venueId);
+  async setVenueHours(venueId, openingHour, closingHour) {
+    try {
+      if (this.useDatabase) {
+        const result = await dbAPI.venueService.setVenueHours(venueId, openingHour, closingHour);
+        
+        if (result.success) {
+          // Update in-memory venue
+          const updatedVenue = await this.getVenue(venueId);
+          
+          // If this is the current venue, update game state
+          if (this.game.state.currentVenue && this.game.state.currentVenue.id === venueId) {
+            this.game.state.currentVenue = updatedVenue;
+          }
+          
+          // Update venue in player's venues list
+          const venueIndex = this.game.state.player.venues.findIndex(v => v.id === venueId);
+          if (venueIndex !== -1) {
+            this.game.state.player.venues[venueIndex] = updatedVenue;
+          }
+          
+          window.logToConsole(result.message, 'success');
+          return true;
+        }
+        return false;
+      } else {
+        // Fallback to in-memory update
+        return this.venueUpgrader.setVenueHours(venueId, openingHour, closingHour);
+      }
+    } catch (error) {
+      console.error(`Error setting venue hours ${venueId}:`, error);
+      window.logToConsole(`Failed to set venue hours: ${error.message}`, 'error');
+      return false;
+    }
   }
   
-  sellVenue(venueId) {
-    return this.venueUpgrader.sellVenue(venueId);
+  async setMusicVolume(venueId, volume) {
+    try {
+      if (this.useDatabase) {
+        const result = await dbAPI.venueService.setMusicVolume(venueId, volume);
+        
+        if (result.success) {
+          // Update in-memory venue
+          const updatedVenue = await this.getVenue(venueId);
+          
+          // If this is the current venue, update game state
+          if (this.game.state.currentVenue && this.game.state.currentVenue.id === venueId) {
+            this.game.state.currentVenue = updatedVenue;
+          }
+          
+          // Update venue in player's venues list
+          const venueIndex = this.game.state.player.venues.findIndex(v => v.id === venueId);
+          if (venueIndex !== -1) {
+            this.game.state.player.venues[venueIndex] = updatedVenue;
+          }
+          
+          window.logToConsole(result.message, 'success');
+          if (result.warning) {
+            window.logToConsole(result.warning, 'warning');
+          }
+          return true;
+        }
+        return false;
+      } else {
+        // Fallback to in-memory update
+        return this.venueUpgrader.setMusicVolume(venueId, volume);
+      }
+    } catch (error) {
+      console.error(`Error setting music volume for venue ${venueId}:`, error);
+      window.logToConsole(`Failed to set music volume: ${error.message}`, 'error');
+      return false;
+    }
+  }
+  
+  async setLightingLevel(venueId, level) {
+    try {
+      if (this.useDatabase) {
+        const result = await dbAPI.venueService.setLightingLevel(venueId, level);
+        
+        if (result.success) {
+          // Update in-memory venue
+          const updatedVenue = await this.getVenue(venueId);
+          
+          // If this is the current venue, update game state
+          if (this.game.state.currentVenue && this.game.state.currentVenue.id === venueId) {
+            this.game.state.currentVenue = updatedVenue;
+          }
+          
+          // Update venue in player's venues list
+          const venueIndex = this.game.state.player.venues.findIndex(v => v.id === venueId);
+          if (venueIndex !== -1) {
+            this.game.state.player.venues[venueIndex] = updatedVenue;
+          }
+          
+          window.logToConsole(result.message, 'success');
+          return true;
+        }
+        return false;
+      } else {
+        // Fallback to in-memory update
+        return this.venueUpgrader.setLightingLevel(venueId, level);
+      }
+    } catch (error) {
+      console.error(`Error setting lighting level for venue ${venueId}:`, error);
+      window.logToConsole(`Failed to set lighting level: ${error.message}`, 'error');
+      return false;
+    }
+  }
+  
+  async setEntranceFee(venueId, fee) {
+    try {
+      if (this.useDatabase) {
+        const result = await dbAPI.venueService.setEntranceFee(venueId, fee);
+        
+        if (result.success) {
+          // Update in-memory venue
+          const updatedVenue = await this.getVenue(venueId);
+          
+          // If this is the current venue, update game state
+          if (this.game.state.currentVenue && this.game.state.currentVenue.id === venueId) {
+            this.game.state.currentVenue = updatedVenue;
+          }
+          
+          // Update venue in player's venues list
+          const venueIndex = this.game.state.player.venues.findIndex(v => v.id === venueId);
+          if (venueIndex !== -1) {
+            this.game.state.player.venues[venueIndex] = updatedVenue;
+          }
+          
+          window.logToConsole(result.message, 'success');
+          if (result.warning) {
+            window.logToConsole(result.warning, 'warning');
+          }
+          return true;
+        }
+        return false;
+      } else {
+        // Fallback to in-memory update
+        return this.venueUpgrader.setEntranceFee(venueId, fee);
+      }
+    } catch (error) {
+      console.error(`Error setting entrance fee for venue ${venueId}:`, error);
+      window.logToConsole(`Failed to set entrance fee: ${error.message}`, 'error');
+      return false;
+    }
+  }
+  
+  async cleanVenue(venueId) {
+    try {
+      if (this.useDatabase) {
+        const result = await dbAPI.venueService.cleanVenue(venueId);
+        
+        if (result.success) {
+          // Update in-memory venue
+          const updatedVenue = await this.getVenue(venueId);
+          
+          // If this is the current venue, update game state
+          if (this.game.state.currentVenue && this.game.state.currentVenue.id === venueId) {
+            this.game.state.currentVenue = updatedVenue;
+          }
+          
+          // Update venue in player's venues list
+          const venueIndex = this.game.state.player.venues.findIndex(v => v.id === venueId);
+          if (venueIndex !== -1) {
+            this.game.state.player.venues[venueIndex] = updatedVenue;
+          }
+          
+          // Update player cash if there was a cost
+          if (result.cost > 0) {
+            this.game.state.player.cash -= result.cost;
+          }
+          
+          window.logToConsole(result.message, 'success');
+          return true;
+        }
+        return false;
+      } else {
+        // Fallback to in-memory cleaning
+        return this.venueUpgrader.cleanVenue(venueId);
+      }
+    } catch (error) {
+      console.error(`Error cleaning venue ${venueId}:`, error);
+      window.logToConsole(`Failed to clean venue: ${error.message}`, 'error');
+      return false;
+    }
+  }
+  
+  async sellVenue(venueId) {
+    try {
+      if (this.useDatabase) {
+        const result = await dbAPI.venueService.sellVenue(venueId, this.game.state.player.id);
+        
+        if (result.success) {
+          // Add sale amount to player's cash
+          this.game.state.player.cash += result.saleValue;
+          
+          // Remove venue from player's venues list
+          const venueIndex = this.game.state.player.venues.findIndex(v => v.id === venueId);
+          if (venueIndex !== -1) {
+            this.game.state.player.venues.splice(venueIndex, 1);
+          }
+          
+          // If this was the current venue, set current venue to null or another venue
+          if (this.game.state.currentVenue && this.game.state.currentVenue.id === venueId) {
+            this.game.state.currentVenue = this.game.state.player.venues.length > 0 ? 
+                                          this.game.state.player.venues[0] : null;
+            
+            // Update database setting
+            if (this.game.state.currentVenue) {
+              await dbAPI.settings.setSetting('current_venue_id', this.game.state.currentVenue.id, 'game');
+            } else {
+              await dbAPI.settings.setSetting('current_venue_id', null, 'game');
+            }
+          }
+          
+          window.logToConsole(result.message, 'success');
+          return true;
+        }
+        return false;
+      } else {
+        // Fallback to in-memory sell
+        return this.venueUpgrader.sellVenue(venueId);
+      }
+    } catch (error) {
+      console.error(`Error selling venue ${venueId}:`, error);
+      window.logToConsole(`Failed to sell venue: ${error.message}`, 'error');
+      return false;
+    }
+  }
+  
+  // VenueReport - new feature using database capabilities
+  async getVenueReport(venueId) {
+    try {
+      if (this.useDatabase) {
+        const report = await dbAPI.venueService.getVenueReport(venueId);
+        return report;
+      } else {
+        // Basic report for in-memory mode
+        const venue = await this.getVenue(venueId);
+        if (!venue) return null;
+        
+        return {
+          venue,
+          staff: {
+            count: venue.staff.length,
+            totalWages: 0 // Would require staffManager integration
+          },
+          inventory: {
+            summary: { totalValue: 0 }, // Would require inventoryManager integration
+            lowStock: [],
+            maintenance: []
+          },
+          finances: {
+            summary: {
+              totalRevenue: venue.finances.monthlyRevenue,
+              totalExpense: venue.finances.monthlyExpenses,
+              netIncome: venue.finances.monthlyRevenue - venue.finances.monthlyExpenses
+            },
+            trend: []
+          },
+          timestamp: new Date().toISOString()
+        };
+      }
+    } catch (error) {
+      console.error(`Error generating venue report for ${venueId}:`, error);
+      return null;
+    }
   }
 }
 
