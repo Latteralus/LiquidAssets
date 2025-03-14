@@ -1,5 +1,6 @@
 // js/database/dao/staffDAO.js
 const { DatabaseManager } = require('../databaseManager');
+const { v4: uuidv4 } = require('uuid');
 
 class StaffDAO {
   constructor() {
@@ -18,9 +19,13 @@ class StaffDAO {
         throw new Error('Missing required staff properties');
       }
 
+      // Generate ID if not provided
+      const staffId = staff.id || uuidv4();
+
       // Convert staff object to a format suitable for database
       const staffRecord = {
-        venue_id: staff.venue || null,
+        id: staffId,
+        venue_id: staff.venueId || staff.venue || null,
         name: staff.name,
         type: staff.type,
         wage: staff.wage || 0,
@@ -37,16 +42,84 @@ class StaffDAO {
         working_hours: JSON.stringify(staff.workingHours || {})
       };
 
-      // Insert staff record and get the ID
-      const id = await this.db.insert('staff', staffRecord);
+      // Insert staff record
+      await this.db.insert('staff', staffRecord);
       
       // Return complete staff with ID
       return {
-        id: id,
+        id: staffId,
         ...staff
       };
     } catch (error) {
       console.error('Error creating staff:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Creates multiple staff records in a single transaction
+   * @param {Array<Object>} staffList - Array of staff objects to create
+   * @returns {Promise<Array<Object>>} Array of created staff with IDs
+   */
+  async createStaffBatch(staffList) {
+    if (!Array.isArray(staffList) || staffList.length === 0) {
+      return [];
+    }
+
+    // Start a transaction
+    const transactionId = await this.db.beginTransaction();
+    
+    try {
+      const createdStaff = [];
+      
+      for (const staff of staffList) {
+        // Ensure staff has all required fields
+        if (!staff.name || !staff.type) {
+          console.warn('Skipping staff with missing properties:', staff);
+          continue;
+        }
+
+        // Generate ID if not provided
+        const staffId = staff.id || uuidv4();
+
+        // Convert staff object to a format suitable for database
+        const staffRecord = {
+          id: staffId,
+          venue_id: staff.venueId || staff.venue || null,
+          name: staff.name,
+          type: staff.type,
+          wage: staff.wage || 0,
+          experience: staff.experience || 0,
+          morale: staff.morale || 80,
+          hire_date: staff.hireDate || null,
+          is_working: staff.isWorking ? 1 : 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          // Store complex objects as JSON
+          skills: JSON.stringify(staff.skills || {}),
+          personality: JSON.stringify(staff.personality || {}),
+          working_days: JSON.stringify(staff.workingDays || []),
+          working_hours: JSON.stringify(staff.workingHours || {})
+        };
+
+        // Insert staff record using the transaction
+        await this.db.insert('staff', staffRecord, transactionId);
+        
+        // Add to result list
+        createdStaff.push({
+          id: staffId,
+          ...staff
+        });
+      }
+      
+      // Commit the transaction
+      await this.db.commitTransaction(transactionId);
+      
+      return createdStaff;
+    } catch (error) {
+      // Rollback the transaction on error
+      await this.db.rollbackTransaction(transactionId);
+      console.error('Error creating staff batch:', error);
       throw error;
     }
   }
@@ -76,17 +149,11 @@ class StaffDAO {
    * Updates an existing staff member
    * @param {string|number} id - The staff ID
    * @param {Object} staffData - The updated staff data
+   * @param {string} [transactionId] - Optional transaction ID
    * @returns {Promise<boolean>} True if update successful
    */
-  async updateStaff(id, staffData) {
+  async updateStaff(id, staffData, transactionId = null) {
     try {
-      // Get current staff to merge with updates
-      const currentStaff = await this.getStaffById(id);
-      
-      if (!currentStaff) {
-        throw new Error(`Staff with ID ${id} not found`);
-      }
-
       // Prepare update object with only supported fields
       const updateData = {
         updated_at: new Date().toISOString()
@@ -101,6 +168,7 @@ class StaffDAO {
       if (staffData.hireDate !== undefined) updateData.hire_date = staffData.hireDate;
       if (staffData.isWorking !== undefined) updateData.is_working = staffData.isWorking ? 1 : 0;
       if (staffData.venue !== undefined) updateData.venue_id = staffData.venue;
+      if (staffData.venueId !== undefined) updateData.venue_id = staffData.venueId;
 
       // Update complex objects if provided
       if (staffData.skills) updateData.skills = JSON.stringify(staffData.skills);
@@ -109,7 +177,7 @@ class StaffDAO {
       if (staffData.workingHours) updateData.working_hours = JSON.stringify(staffData.workingHours);
 
       // Perform update
-      const success = await this.db.update('staff', id, updateData);
+      const success = await this.db.update('staff', id, updateData, transactionId);
       return success;
     } catch (error) {
       console.error(`Error updating staff with ID ${id}:`, error);
@@ -187,6 +255,20 @@ class StaffDAO {
   }
 
   /**
+   * Gets all staff in the database
+   * @returns {Promise<Array>} Array of all staff objects
+   */
+  async getAllStaff() {
+    try {
+      const records = await this.db.query('SELECT * FROM staff');
+      return records.map(record => this.mapRecordToStaff(record));
+    } catch (error) {
+      console.error('Error retrieving all staff:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Updates staff morale
    * @param {string|number} id - The staff ID
    * @param {number} morale - The new morale value
@@ -236,12 +318,31 @@ class StaffDAO {
   }
 
   /**
+   * Updates staff working status
+   * @param {string|number} id - The staff ID
+   * @param {boolean} isWorking - New working status
+   * @returns {Promise<boolean>} True if update successful
+   */
+  async updateStaffWorkingStatus(id, isWorking) {
+    try {
+      return await this.db.update('staff', id, {
+        is_working: isWorking ? 1 : 0,
+        updated_at: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error(`Error updating working status for staff ${id}:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Assigns staff to a venue
    * @param {string|number} staffId - The staff ID
    * @param {string|number} venueId - The venue ID
+   * @param {string} [transactionId] - Optional transaction ID
    * @returns {Promise<boolean>} True if assignment successful
    */
-  async assignStaffToVenue(staffId, venueId) {
+  async assignStaffToVenue(staffId, venueId, transactionId = null) {
     try {
       const staff = await this.getStaffById(staffId);
       
@@ -259,7 +360,7 @@ class StaffDAO {
         updateData.hire_date = new Date().toISOString();
       }
 
-      return await this.db.update('staff', staffId, updateData);
+      return await this.db.update('staff', staffId, updateData, transactionId);
     } catch (error) {
       console.error(`Error assigning staff ${staffId} to venue ${venueId}:`, error);
       throw error;
@@ -284,6 +385,131 @@ class StaffDAO {
   }
 
   /**
+   * Gets total staff cost for a venue
+   * @param {string|number} venueId - The venue ID
+   * @returns {Promise<number>} Total weekly wages
+   */
+  async getStaffCost(venueId) {
+    try {
+      const result = await this.db.query(
+        'SELECT SUM(wage) as total_wages FROM staff WHERE venue_id = ?',
+        [venueId]
+      );
+      
+      return result[0]?.total_wages || 0;
+    } catch (error) {
+      console.error(`Error getting staff cost for venue ${venueId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Gets average staff morale for a venue
+   * @param {string|number} venueId - The venue ID
+   * @returns {Promise<number>} Average morale value
+   */
+  async getAverageStaffMorale(venueId) {
+    try {
+      const result = await this.db.query(
+        'SELECT AVG(morale) as avg_morale FROM staff WHERE venue_id = ?',
+        [venueId]
+      );
+      
+      return result[0]?.avg_morale || 0;
+    } catch (error) {
+      console.error(`Error getting average morale for venue ${venueId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Refreshes the available staff pool by removing some and adding new ones
+   * @returns {Promise<boolean>} True if refresh successful
+   */
+  async refreshAvailableStaff() {
+    // Start a transaction
+    const transactionId = await this.db.beginTransaction();
+    
+    try {
+      // Get current available staff
+      const availableStaff = await this.getAvailableStaff();
+      
+      if (availableStaff.length === 0) {
+        // If no available staff, just create a new batch
+        // This will be handled by the StaffGenerator
+        await this.db.commitTransaction(transactionId);
+        return true;
+      }
+      
+      // Keep around 70% of existing staff
+      const retainCount = Math.floor(availableStaff.length * 0.7);
+      
+      // Sort by quality (average skill level)
+      const sortedStaff = availableStaff.sort((a, b) => {
+        const aAvgSkill = Object.values(a.skills).reduce((sum, val) => sum + val, 0) / 
+                          Object.values(a.skills).length;
+        const bAvgSkill = Object.values(b.skills).reduce((sum, val) => sum + val, 0) / 
+                          Object.values(b.skills).length;
+        return bAvgSkill - aAvgSkill;
+      });
+      
+      // Remove the lowest quality staff
+      for (let i = retainCount; i < sortedStaff.length; i++) {
+        await this.db.delete('staff', sortedStaff[i].id, transactionId);
+      }
+      
+      // Commit the transaction
+      await this.db.commitTransaction(transactionId);
+      
+      return true;
+    } catch (error) {
+      // Rollback on error
+      await this.db.rollbackTransaction(transactionId);
+      console.error('Error refreshing available staff:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Gets staff that are scheduled to work for a specific venue and time
+   * @param {string|number} venueId - The venue ID
+   * @param {number} dayOfWeek - The day of week (1-7 for Monday-Sunday)
+   * @param {number} hour - The hour of day (0-23)
+   * @returns {Promise<Array>} Array of scheduled staff
+   */
+  async getScheduledStaff(venueId, dayOfWeek, hour) {
+    try {
+      const venueStaff = await this.getStaffByVenueId(venueId);
+      
+      // Filter staff by schedule
+      return venueStaff.filter(staff => {
+        // Check if the staff works on this day
+        if (!staff.workingDays || !Array.isArray(staff.workingDays)) return false;
+        
+        // Convert from 1-7 (Monday-Sunday) to 0-6 (Sunday-Saturday)
+        const dayIndex = (dayOfWeek + 5) % 7;
+        
+        if (!staff.workingDays[dayIndex]) return false;
+        
+        // Check if the staff works at this hour
+        if (!staff.workingHours || typeof staff.workingHours !== 'object') return false;
+        
+        const { start, end } = staff.workingHours;
+        
+        // Handle shifts that span midnight
+        if (end < start) {
+          return hour >= start || hour < end;
+        } else {
+          return hour >= start && hour < end;
+        }
+      });
+    } catch (error) {
+      console.error(`Error getting scheduled staff for venue ${venueId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Maps a database record to a staff object
    * @private
    * @param {Object} record - The database record
@@ -295,6 +521,7 @@ class StaffDAO {
       name: record.name,
       type: record.type,
       venue: record.venue_id,
+      venueId: record.venue_id,
       wage: record.wage,
       experience: record.experience,
       morale: record.morale,

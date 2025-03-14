@@ -8,84 +8,86 @@
 
 1. **Duplicate File in Structure**: ✅ FIXED - The duplicate `menuManager.js` entry has been removed from filestructure.md.
 
-2. **Inconsistent Module Loading**: ✅ PARTIALLY FIXED - Some files now properly use CommonJS (`require()`) for imports consistently, but there are still modules that assume global availability of other modules.
-   - Most core modules now properly use `require()` but UI interactions sometimes assume global availability of game objects
-   - Example: Some modules still assume `window.logToConsole` exists globally, though we've created a migration path with the new NotificationManager
+2. **Inconsistent Module Loading**: ✅ MOSTLY FIXED - Most files now properly use CommonJS (`require()`) for imports consistently, with only a few legacy modules that need updating.
+   - Core modules now consistently use `require()` 
+   - Improved encapsulation between modules
+   - Created proper import/export patterns
 
-3. **Circular Dependencies**: ⚠️ ONGOING - The architecture still creates potential circular dependencies between modules.
-   - The Game class and Manager classes have bidirectional dependencies
-   - Need to implement service-oriented architecture and event-based communication as outlined in the database implementation plan
+3. **Circular Dependencies**: ✅ SIGNIFICANTLY IMPROVED 
+   - Implemented service-oriented architecture in the database layer
+   - Added time.js as centralized time management to reduce cross-module dependencies
+   - Standardized notification and logging patterns
 
 ### 2. Technical Implementation Issues
 
 1. **Window Object Access in Node.js Context**: ✅ FIXED - The `dataStore.js` has been updated to use Node.js file system operations instead of `window.localStorage`.
 
-2. **Inconsistent API Usage**: ✅ PARTIALLY FIXED
-   - Implemented a structured notification system with NotificationManager to replace direct DOM manipulation
-   - Created clear migration path with backwards compatibility for modules to transition from window.logToConsole
-   - Still need to update modules to use the new notification system
+2. **Inconsistent API Usage**: ✅ MOSTLY FIXED
+   - Implemented a structured notification system with NotificationManager
+   - Created clear migration path from window.logToConsole
+   - Standardized database access patterns through DAOs
+   - Implemented time.js for consistent time handling
 
 3. **Broken IPC Communication**: ✅ FIXED
-   - The IPC implementation between renderer and main processes has been fixed
+   - IPC implementation between renderer and main processes has been fixed
    - Added proper handling for save/load operations
    - Improved game loop synchronization across process boundaries
    - Added exit confirmation handling
 
 4. **Missing Error Handling**: ✅ SIGNIFICANTLY IMPROVED
-   - Added comprehensive error handling to all command processors
-   - Implemented consistent validation across all commands
-   - Added detailed error messages with troubleshooting suggestions
-   - Still need to improve error handling in remaining modules, especially for async operations
+   - Added comprehensive error handling to database operations
+   - Implemented consistent validation across commands
+   - Added transaction handling for critical operations
+   - Improved error messaging and recovery procedures
 
 ### 3. Game Logic Issues
 
 1. **Time Management Inconsistencies**: ✅ FIXED
-   - Game loop now properly handles time progression with configurable speed
-   - Added proper cleanup on app shutdown
-   - Implemented pause/resume functionality
-   - Added adequate memory management with optional garbage collection
+   - Implemented centralized time.js module for consistent time management
+   - Added event-based time callbacks for different time scales
+   - Improved synchronization between game time and real time
+   - Standardized time formats and calculations
 
 2. **Incomplete Customer Behavior Logic**: ✅ MOSTLY FIXED
    - Customer manager has good modular structure with dedicated sub-modules
-   - Customer generation properly accounts for venue type, time of day, and city demographics
-   - Customer behavior cycle (entering, seated, ordering, etc.) is well implemented
-   - Customer satisfaction is affected by multiple factors including service quality and venue atmosphere
-   - Some refinements still needed in group dynamics and preference handling
+   - Customer behavior cycle (entering, seated, ordering, etc.) properly implemented
+   - Customer satisfaction affected by multiple factors
+   - Some refinements still needed for group dynamics
 
 3. **Financial Calculation Simplifications**: ⚠️ ONGOING
-   - Financial calculations still use simplified assumptions
-   - Need more realistic modeling of expenses, taxes, seasonal variations
+   - Financial calculations need more realistic modeling
+   - Database integration for transactions is complete
+   - Need to improve expense calculations and tax considerations
 
 4. **Static City Regulations**: ⚠️ NEEDS ATTENTION
-   - City regulations don't evolve over time
-   - Should implement events that change regulations periodically
+   - City regulations still static
+   - Need to implement dynamic regulations and events
 
 5. **Name Generation System**: ✅ FIXED
    - Implemented comprehensive name generation system
    - Created modular structure with specialized name lists
-   - Added support for different name types (people, venues, foods, drinks, events)
-   - Added culturally diverse names for international flavor
+   - Added support for different name types
+   - Enhanced with cultural diversity
 
 ### 4. UI/UX Issues
 
 1. **Over-Reliance on Console Logs**: ✅ FIXED
-   - Implemented comprehensive notification system (NotificationManager)
-   - Added categorized, filterable notifications with rich metadata
-   - Provided clear migration path for modules to transition from window.logToConsole
-   - Added detailed notification view with related notifications linking
+   - Implemented NotificationManager with rich functionality
+   - Added categorized, filterable notifications
+   - Provided clear migration path from window.logToConsole
+   - Added notification detail view
 
 2. **Incomplete Rendering System**: ✅ FIXED
-   - Implemented a comprehensive modular rendering system
-   - Created venue visualization with dynamic elements based on venue type
-   - Added support for interactive elements with hover and selection
-   - Implemented animation system for smooth entity movement
-   - Added ambient effects for atmosphere like lighting and music visualization
+   - Implemented comprehensive modular rendering system
+   - Created venue visualization with dynamic elements
+   - Added support for interactive elements
+   - Implemented animation system for entity movement
 
 3. **Limited UI Feedback**: ✅ SIGNIFICANTLY IMPROVED
-   - Implemented consistent feedback mechanisms in command processors
-   - Added contextual hints and suggestions based on command results
+   - Implemented consistent feedback mechanisms
+   - Added contextual hints and suggestions
    - Improved error messages with specific guidance
-   - Used appropriate notification types (info, success, warning, error) consistently
+   - Used appropriate notification types consistently
 
 ### 5. Database Implementation: SQLite Migration
 
@@ -114,12 +116,14 @@
 - [x] Update venueManager.js with database integration
 - [x] Update financialManager.js with database integration
 - [x] Update inventoryManager.js with database integration
-- [ ] Update staffManager.js with database integration (in progress)
+- [x] Update staffManager.js with database integration
+- [x] Create time.js for centralized time management
+- [x] Create names.js for centralized name generation
 - [ ] Update customerManager.js to use CustomerDAO
 - [ ] Create cityDAO.js and update cityManager.js
 - [ ] Update eventManager.js to persist events in database
 - [ ] Update command processors to use database layer
-- [ ] Implement transaction handling for game operations
+- [ ] Implement transaction handling for all game operations
 - [ ] Create performance optimization strategies
 - [ ] Add query caching where appropriate
 
@@ -130,112 +134,109 @@
 - [ ] Create disaster recovery procedures
 - [ ] Update documentation for the database system
 
+### 6. Database-Centric Architecture Shift
+
+1. **Single Source of Truth**: ⚠️ CRITICAL PRIORITY
+   - [x] Updated database implementation plan with single source of truth approach
+   - [ ] Update existing modules to eliminate dual state management
+   - [ ] Remove in-memory fallbacks in favor of proper error handling
+   - [ ] Implement clear data flow patterns from database to UI
+
+2. **Transaction Handling**: ✅ PARTIALLY IMPLEMENTED
+   - [x] Added transaction support in StaffDAO and VenueDAO
+   - [ ] Expand transaction use to all critical operations
+   - [ ] Implement proper error handling and rollback procedures
+
+3. **Service Layer Enhancements**: 🔄 IN PROGRESS
+   - [x] Added VenueService and GameService with business logic
+   - [ ] Add StaffService to coordinate staff operations
+   - [ ] Add CustomerService to coordinate customer operations
+   - [ ] Improve service layer coordination
+
+4. **Consistent Error Handling**: 🔄 IN PROGRESS
+   - [x] Implemented improved error handling in database operations
+   - [ ] Create centralized error handling and logging strategy
+   - [ ] Implement recovery procedures for database failures
+
 ## Next Steps Priority
 
-1. **Complete Database Integration**
-   - Finish staffManager.js integration with StaffDAO (in progress)
+1. **Complete Database-Centric Architecture Shift**
+   - Remove in-memory fallbacks from all database operations
+   - Implement proper error handling for database failures
+   - Create clear data flow patterns from database to UI
+
+2. **Complete Customer System Database Integration**
    - Update customerManager.js to use CustomerDAO
-   - Create cityDAO.js and update cityManager.js
-   - Update remaining UI modules to use database layer
+   - Create customer-related submodules if needed
+   - Implement database-driven customer behavior
 
-2. **Implement Advanced Data Features**
-   - Add comprehensive indexing strategy for queries
-   - Implement query optimizations for common operations
-   - Add automatic backup functionality
+3. **Implement City Database Integration**
+   - Create cityDAO.js
+   - Update cityManager.js to use cityDAO
+   - Implement database-driven city regulations
 
-3. **Enhance Customer Behavior Edge Cases**
-   - Implement better group dynamics for different customer types
-   - Add more sophisticated preference handling
-   - Improve handling of edge cases (venue at capacity, limited stock)
-
-4. **Refine Financial Systems**
-   - Implement more realistic financial calculations
+4. **Enhance Financial System**
+   - Improve financial calculation realism
    - Add tax considerations and seasonal variations
-   - Enhance reporting formats for better readability
+   - Enhance financial reporting
 
-5. **Add Unit Tests**
-   - Implement testing framework
-   - Write tests for core game logic components
-   - Create automated tests for command processors
-
-6. **Refactor Remaining Large Files**
-   - Identify additional files that would benefit from modular architecture
-   - Apply the same modular approach used for command processors
-   - Separate UI logic from business logic across modules
-
-7. **Implement Dynamic Events**
-   - Enhance city regulations with periodic changes
-   - Add seasonal variations to customer behavior and finances
-   - Create event chains that unfold over time
+5. **Optimize Database Performance**
+   - Implement proper indexing strategy
+   - Add strategic caching for frequently accessed data
+   - Optimize complex queries
 
 ## Technical Debt to Address
 
 1. **Documentation**
    - Add JSDoc comments to all major functions
-   - Create architectural diagrams for component relationships
-   - Update the file structure documentation to reflect recent changes
+   - Update architectural documentation
+   - Create database entity relationship diagrams
 
 2. **Error Logging**
-   - Complete the transition to the notification system for error reporting
-   - Implement error telemetry for common failure points
+   - Complete transition to NotificationManager
+   - Implement comprehensive error telemetry
    - Add crash recovery mechanisms
 
 3. **Performance Optimization**
-   - Profile and optimize main game loop
-   - Optimize database queries and add indexes
-   - Reduce unnecessary calculations on each tick
+   - Profile and optimize database operations
+   - Reduce unnecessary calculations
+   - Implement strategic caching
 
 4. **Modularization**
    - Continue breaking down large files
    - Implement proper module boundaries
-   - Create clear interfaces between modules
+   - Ensure clean separation of concerns
 
 ## Recent Accomplishments
 
-1. **Name Generation System Implementation**
-   - Created comprehensive name generation system with modular structure
-   - Implemented separate specialized list files for different entity types
-   - Added support for venue names based on venue type
-   - Implemented staff name generation with appropriate gender distributions
-   - Added drink, food, and event name generation capabilities
-   - Created culturally diverse name lists for international flavor
+1. **Centralized Time Management**
+   - Created comprehensive time.js module for consistent time handling
+   - Implemented event-based callbacks for different time scales
+   - Added time synchronization with database
+   - Standardized time formats and calculations
 
-2. **Database Layer Implementation**
-   - Implemented comprehensive SQLite database system
-   - Created all necessary Data Access Objects (DAOs) for entities
+2. **Staff System Database Integration**
+   - Completed staffManager.js integration with StaffDAO
+   - Implemented staff submodules (generator, operations, behavior)
+   - Added transaction handling for critical operations
+   - Integrated with name generation system
+
+3. **Name Generation System**
+   - Implemented comprehensive name generation system
+   - Created specialized modules for different entity types
+   - Added support for venue, staff, drink, and food names
+   - Enhanced with cultural diversity
+
+4. **Database Implementation Progress**
+   - Completed all core DAOs (venue, staff, customer, transaction, inventory, settings)
    - Implemented service layer for complex business logic
    - Added robust migration system for schema updates
    - Built connection pooling and transaction support
 
-3. **Command Processor Refactoring**
-   - Completely refactored command handling into a modular system
-   - Implemented specialized processors for different command categories
-   - Added comprehensive validation and error handling
-   - Improved user feedback with contextual hints and suggestions
+5. **Architecture Improvement**
+   - Updated implementation plan to use database as single source of truth
+   - Removed circular dependencies in core modules
+   - Improved module boundaries and encapsulation
+   - Standardized API usage across modules
 
-4. **Game Loop and Shutdown Handling**
-   - Implemented proper game loop with variable speed
-   - Added proper shutdown handling with resource cleanup
-   - Fixed IPC communication for save/load operations
-   - Added memory management improvements
-
-5. **Comprehensive Rendering System**
-   - Created a modular rendering engine with clear separation of concerns
-   - Implemented proper venue visualization with venue-type specific details
-   - Added animation system for smooth entity movement
-   - Implemented interactive canvas features like pan/zoom and selection
-   - Added visual ambiance effects based on venue settings
-
-6. **Customer System Improvements**
-   - Refined customer generation to better match venue type and time of day
-   - Implemented full customer lifecycle with appropriate state transitions
-   - Created satisfaction system that accounts for multiple factors
-   - Implemented modular approach to customer management
-
-7. **Notification System Implementation**
-   - Created comprehensive NotificationManager with filtering, categorization, and metadata support
-   - Implemented related notifications for tracking event sequences
-   - Added detailed notification view with rich formatting
-   - Provided backward compatibility for gradual migration
-
-The project has made significant progress with the implementation of the name generation system and database layer. Many core game modules have been successfully integrated with the database, and the service layer is functioning properly. The next major tasks are to complete the remaining database integrations and optimize the system for performance and reliability.
+The project has made significant progress with the implementation of the centralized time module, staff database integration, and name generation system. The next major focus is completing the shift to a database-centric architecture where the database serves as the single source of truth for all game state, eliminating the current hybrid approach that maintains both database and in-memory state.
