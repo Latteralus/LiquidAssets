@@ -108,7 +108,12 @@
 - [x] Update venueManager.js with database integration
 - [x] Update financialManager.js with database integration
 - [x] Update inventoryManager.js with database integration
-- [ ] Update staffManager.js with database integration (in progress)
+- [x] Update staffManager.js with database integration
+  - [x] Refactor staffManager.js into modular structure
+  - [x] Create staffGenerator.js for staff creation
+  - [x] Create staffOperations.js for CRUD operations
+  - [x] Create staffBehavior.js for staff morale and events
+  - [ ] Integrate with `names.js` for consistent name generation
 - [ ] Update customerManager.js to use CustomerDAO
 - [ ] Create cityDAO.js and update cityManager.js
 - [ ] Update eventManager.js to persist events in database
@@ -127,62 +132,69 @@
 ## Next Steps Priority
 
 1. **Complete Database Integration**
-   - Finish staffManager.js integration with StaffDAO (in progress)
-   - Update customerManager.js to use CustomerDAO
-   - Create cityDAO.js and update cityManager.js
-   - Update remaining UI modules to use database layer
+   - [x] Refactor staffManager.js into modular system with specialized submodules
+   - [ ] Integrate all modules with names.js for consistent name generation
+   - [ ] Update customerManager.js to use CustomerDAO
+   - [ ] Create cityDAO.js and update cityManager.js
+   - [ ] Update remaining UI modules to use database layer
 
 2. **Implement Advanced Data Features**
-   - Add comprehensive indexing strategy for queries
-   - Implement query optimizations for common operations
-   - Add automatic backup functionality
+   - [ ] Add comprehensive indexing strategy for queries
+   - [ ] Implement query optimizations for common operations
+   - [ ] Add automatic backup functionality
 
 3. **Enhance Customer Behavior Edge Cases**
-   - Implement better group dynamics for different customer types
-   - Add more sophisticated preference handling
-   - Improve handling of edge cases (venue at capacity, limited stock)
+   - [ ] Implement better group dynamics for different customer types
+   - [ ] Add more sophisticated preference handling
+   - [ ] Improve handling of edge cases (venue at capacity, limited stock)
 
 4. **Refine Financial Systems**
-   - Implement more realistic financial calculations
-   - Add tax considerations and seasonal variations
-   - Enhance reporting formats for better readability
+   - [ ] Implement more realistic financial calculations
+   - [ ] Add tax considerations and seasonal variations
+   - [ ] Enhance reporting formats for better readability
 
 5. **Add Unit Tests**
-   - Implement testing framework
-   - Write tests for core game logic components
-   - Create automated tests for command processors
+   - [ ] Implement testing framework
+   - [ ] Write tests for core game logic components
+   - [ ] Create automated tests for command processors
 
 6. **Refactor Remaining Large Files**
-   - Identify additional files that would benefit from modular architecture
-   - Apply the same modular approach used for command processors
-   - Separate UI logic from business logic across modules
+   - [x] Identify additional files that would benefit from modular architecture
+   - [x] Apply the same modular approach used for command processors
+   - [x] Separate UI logic from business logic across modules
 
 7. **Implement Dynamic Events**
-   - Enhance city regulations with periodic changes
-   - Add seasonal variations to customer behavior and finances
-   - Create event chains that unfold over time
+   - [ ] Enhance city regulations with periodic changes
+   - [ ] Add seasonal variations to customer behavior and finances
+   - [ ] Create event chains that unfold over time
 
 ## Technical Debt to Address
 
 1. **Documentation**
-   - Add JSDoc comments to all major functions
-   - Create architectural diagrams for component relationships
-   - Update the file structure documentation to reflect recent changes
+   - [ ] Add JSDoc comments to all major functions
+   - [ ] Create architectural diagrams for component relationships
+   - [ ] Update the file structure documentation to reflect recent changes
 
 2. **Error Logging**
-   - Complete the transition to the notification system for error reporting
-   - Implement error telemetry for common failure points
-   - Add crash recovery mechanisms
+   - [ ] Complete the transition to the notification system for error reporting
+   - [ ] Implement error telemetry for common failure points
+   - [ ] Add crash recovery mechanisms
 
 3. **Performance Optimization**
-   - Profile and optimize main game loop
-   - Optimize database queries and add indexes
-   - Reduce unnecessary calculations on each tick
+   - [ ] Profile and optimize main game loop
+   - [ ] Optimize database queries and add indexes
+   - [ ] Reduce unnecessary calculations on each tick
 
 4. **Modularization**
-   - Continue breaking down large files
-   - Implement proper module boundaries
-   - Create clear interfaces between modules
+   - [x] Continue breaking down large files
+   - [x] Implement proper module boundaries
+   - [x] Create clear interfaces between modules
+
+5. **Naming Conventions**
+   - [ ] Use names.js for consistent name generation across all modules
+   - [ ] Update staffGenerator.js to use names.js
+   - [ ] Update customerGenerator.js to use names.js
+   - [ ] Update any other modules that generate names
 
 ## Recent Accomplishments
 
@@ -224,4 +236,12 @@
    - Added detailed notification view with rich formatting
    - Provided backward compatibility for gradual migration
 
-The project has made significant progress with the implementation of the database layer. Many core game modules have been successfully integrated with the database, and the service layer is functioning properly. The next major tasks are to complete the remaining database integrations and optimize the system for performance and reliability.
+7. **Staff Management Refactoring**
+   - Refactored staffManager.js into a modular system with three specialized modules
+   - Created staffGenerator.js for staff attribute generation
+   - Created staffOperations.js for CRUD operations
+   - Created staffBehavior.js for morale and random events
+   - Implemented database integration with proper fallbacks
+   - Added comprehensive error handling and recovery mechanisms
+
+The project has made significant progress with the implementation of the database layer and modular refactoring of key systems. The staffManager.js refactoring is now complete, providing a blueprint for the remaining modules. The next steps are to integrate with the names.js file for consistent name generation and continue with the database integration of the remaining modules.

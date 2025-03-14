@@ -18,6 +18,7 @@ liquidassets/
 └── js/
     ├── game.js            # Main game logic and state management
     ├── config.js          # Game configuration and constants
+    ├── names.js           # Centralized name generation data
     ├── modules/           # Game mechanics modules
     │   ├── timeManager.js         # Handles game time progression
     │   ├── venueManager.js        # Manages venue operations
@@ -25,7 +26,11 @@ liquidassets/
     │   │   ├── venueCreator.js    # Handles venue creation
     │   │   ├── layoutGenerator.js # Generates venue layouts
     │   │   └── venueUpgrader.js   # Handles venue upgrades and modifications
-    │   ├── staffManager.js        # Manages staff members
+    │   ├── staffManager.js        # Manages staff members (coordinator)
+    │   ├── staff/                 # Staff-specific modules
+    │   │   ├── staffGenerator.js  # Generates staff members with attributes
+    │   │   ├── staffOperations.js # CRUD operations for staff
+    │   │   └── staffBehavior.js   # Staff morale and random events
     │   ├── customerManager.js     # Handles customer interactions
     │   │   ├── customer/          # Customer-specific modules
     │   │   │   ├── customerBehavior.js   # Customer behavior logic
