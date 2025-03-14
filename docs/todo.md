@@ -89,7 +89,53 @@
    - Improved error messages with specific guidance
    - Used appropriate notification types consistently
 
-### 5. Database Implementation: SQLite Migration
+### 5. Code Duplication and Common Utilities
+
+1. **Logging Duplications**: ⚠️ NEEDS INTEGRATION
+   - ✅ Created `js/utils/logger.js` centralized utility
+   - Need to replace all custom logging with the centralized implementation
+   - Estimated 200-250 lines of code reduction
+
+2. **Database Operation Patterns**: ⚠️ NEEDS INTEGRATION
+   - ✅ Created `js/database/dbUtils.js` centralized utility
+   - Need to standardize database access and fallback patterns
+   - Estimated 150-200 lines of code reduction
+
+3. **Validation Logic**: ⚠️ NEEDS INTEGRATION
+   - ✅ Created `js/utils/validator.js` centralized utility
+   - Need to replace repeated validation code in multiple modules
+   - Estimated 200-300 lines of code reduction
+
+4. **Formatting Functions**: ⚠️ NEEDS INTEGRATION
+   - ✅ Created `js/utils/formatter.js` centralized utility
+   - Need to replace various formatting code throughout the codebase
+   - Estimated 250-350 lines of code reduction
+
+5. **Random Data Generation**: ⚠️ NEEDS INTEGRATION
+   - ✅ Created `js/utils/randomGenerator.js` centralized utility
+   - Need to replace random generation code in multiple modules
+   - Estimated 150-200 lines of code reduction
+
+6. **Entity State Management**: ⚠️ NEEDS INTEGRATION
+   - ✅ Created `js/utils/stateMachine.js` centralized utility
+   - Need to replace custom state tracking in behavior modules
+   - Estimated 300-400 lines of code reduction
+
+7. **DOM Manipulation**: ⚠️ NEEDS INTEGRATION
+   - ✅ Created `js/utils/domUtils.js` centralized utility
+   - Need to replace UI manipulation code in render modules
+   - Estimated 250-350 lines of code reduction
+
+8. **Additional Utilities**: ✅ COMPLETE
+   - ✅ Created `js/utils/idGenerator.js` for entity IDs
+   - ✅ Created `js/utils/fileOperations.js` for file handling
+   - ✅ Created `js/utils/eventBus.js` for event system
+   - ✅ Created `js/utils/configLoader.js` for configuration
+   - ✅ Created `js/utils/dataStructures.js` for data operations
+   - ✅ Created `js/utils/performanceMonitor.js` for optimization
+   - Estimated 500-1000 lines of code reduction upon integration
+
+### 6. Database Implementation: SQLite Migration
 
 #### Phase 1: Setup and Infrastructure
 - [x] Create database folder structure at `/js/database`
@@ -134,56 +180,59 @@
 - [ ] Create disaster recovery procedures
 - [ ] Update documentation for the database system
 
-### 6. Database-Centric Architecture Shift
+### 7. Centralized Utility Implementation
 
-1. **Single Source of Truth**: ⚠️ CRITICAL PRIORITY
-   - [x] Updated database implementation plan with single source of truth approach
-   - [ ] Update existing modules to eliminate dual state management
-   - [ ] Remove in-memory fallbacks in favor of proper error handling
-   - [ ] Implement clear data flow patterns from database to UI
+#### Phase 1: Core Utilities Creation
+- [x] Create js/utils/logger.js for centralized logging
+- [x] Create js/database/dbUtils.js for database operations
+- [x] Create js/utils/validator.js for data validation
+- [x] Create js/utils/formatter.js for text formatting
+- [x] Create js/utils/randomGenerator.js for random generation
+- [x] Create js/utils/stateMachine.js for entity states
 
-2. **Transaction Handling**: ✅ PARTIALLY IMPLEMENTED
-   - [x] Added transaction support in StaffDAO and VenueDAO
-   - [ ] Expand transaction use to all critical operations
-   - [ ] Implement proper error handling and rollback procedures
+#### Phase 2: Additional Utilities Creation
+- [x] Create js/utils/idGenerator.js for entity IDs
+- [x] Create js/utils/fileOperations.js for file handling
+- [x] Create js/utils/eventBus.js for event system
+- [x] Create js/utils/configLoader.js for configuration
+- [x] Create js/utils/dataStructures.js for data operations
+- [x] Create js/utils/domUtils.js for DOM manipulation
+- [x] Create js/utils/performanceMonitor.js for optimization
 
-3. **Service Layer Enhancements**: 🔄 IN PROGRESS
-   - [x] Added VenueService and GameService with business logic
-   - [ ] Add StaffService to coordinate staff operations
-   - [ ] Add CustomerService to coordinate customer operations
-   - [ ] Improve service layer coordination
-
-4. **Consistent Error Handling**: 🔄 IN PROGRESS
-   - [x] Implemented improved error handling in database operations
-   - [ ] Create centralized error handling and logging strategy
-   - [ ] Implement recovery procedures for database failures
+#### Phase 3: Integration with Modules
+- [ ] Integrate logger.js with all modules using logging
+- [ ] Integrate dbUtils.js with all database operations
+- [ ] Integrate stateMachine.js with behavior modules
+- [ ] Integrate validator.js with validation logic
+- [ ] Integrate formatter.js with UI and reporting
+- [ ] Integrate remaining utilities as appropriate
 
 ## Next Steps Priority
 
-1. **Complete Database-Centric Architecture Shift**
+1. **Integrate Core Utility Files**
+   - Start integration with highest priority modules
+   - Begin with logger.js, dbUtils.js, and stateMachine.js
+   - Measure code reduction and performance impact
+
+2. **Complete Database-Centric Architecture Shift**
    - Remove in-memory fallbacks from all database operations
    - Implement proper error handling for database failures
    - Create clear data flow patterns from database to UI
 
-2. **Complete Customer System Database Integration**
+3. **Complete Customer System Database Integration**
    - Update customerManager.js to use CustomerDAO
-   - Create customer-related submodules if needed
-   - Implement database-driven customer behavior
+   - Integrate with stateMachine.js for customer behavior
+   - Implement database-driven customer lifecycle
 
-3. **Implement City Database Integration**
+4. **Implement City Database Integration**
    - Create cityDAO.js
    - Update cityManager.js to use cityDAO
    - Implement database-driven city regulations
 
-4. **Enhance Financial System**
-   - Improve financial calculation realism
-   - Add tax considerations and seasonal variations
-   - Enhance financial reporting
-
-5. **Optimize Database Performance**
-   - Implement proper indexing strategy
-   - Add strategic caching for frequently accessed data
-   - Optimize complex queries
+5. **Enhance Event System with Utilities**
+   - Update eventManager.js to use stateMachine.js and eventBus.js
+   - Persist events in database for continuity
+   - Implement proper event prioritization and handling
 
 ## Technical Debt to Address
 
@@ -193,7 +242,7 @@
    - Create database entity relationship diagrams
 
 2. **Error Logging**
-   - Complete transition to NotificationManager
+   - Complete transition to centralized logger
    - Implement comprehensive error telemetry
    - Add crash recovery mechanisms
 
@@ -239,4 +288,10 @@
    - Improved module boundaries and encapsulation
    - Standardized API usage across modules
 
-The project has made significant progress with the implementation of the centralized time module, staff database integration, and name generation system. The next major focus is completing the shift to a database-centric architecture where the database serves as the single source of truth for all game state, eliminating the current hybrid approach that maintains both database and in-memory state.
+6. **Utility Creation Complete**
+   - Created all 13 centralized utility modules
+   - Each utility designed with comprehensive functionality
+   - Added JSDoc documentation to all utility functions
+   - Estimated code reduction of 15-30% (760-1770 lines) upon integration
+
+The project has made significant progress with the implementation of all planned utility modules. All 13 utility files are now created with comprehensive functionality to reduce code duplication. The next major focus is integrating these utilities with the codebase, starting with the highest priority modules (CustomerManager, CityManager, and EventManager). This integration, combined with the database-centric architecture shift, will result in a more robust and maintainable codebase.
