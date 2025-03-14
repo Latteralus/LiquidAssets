@@ -19,30 +19,32 @@ The implementation of SQLite integration into the game is in progress. Here's th
 12. ✅ Created centralized database API
 13. ✅ Updated **js/game.js** with database integration
 14. ✅ Updated **js/modules/venueManager.js** with database integration
+15. ✅ Updated **js/modules/financialManager.js** with database integration
+16. ✅ Updated **js/modules/inventoryManager.js** with database integration
+17. ✅ Restructured InventoryManager into modular system with specialized submodules
 
 ### In Progress:
-1. 🔄 Testing database operations for performance and reliability
-2. 🔄 Refining error handling and recovery procedures
+1. 🔄 Testing database operations for performance and reliability (preliminary testing only, comprehensive test suite planned)
+2. 🔄 Refining error handling and recovery procedures for database operations (command processor error handling is complete, but other modules still need work)
+3. 🔄 Updating **js/modules/staffManager.js** with database integration
+4. 🔄 Integrating NotificationManager with database operations for consistent user feedback
 
 ### Remaining Tasks:
 
 #### Core Game Files
-1. `js/modules/staffManager.js` - Replace direct state manipulation with StaffDAO
-2. `js/modules/customerManager.js` - Replace in-memory customer tracking with CustomerDAO
-3. `js/modules/financialManager.js` - Replace direct financial tracking with TransactionDAO
-4. `js/modules/inventoryManager.js` - Replace inventory management with InventoryDAO
-5. `js/modules/cityManager.js` - Replace city data with potential CityDAO (may need to be created)
-6. `js/modules/eventManager.js` - Update event scheduling to persist in database
-7. `js/modules/timeManager.js` - Ensure game time is persisted properly
+1. `js/modules/customerManager.js` - Replace in-memory customer tracking with CustomerDAO
+2. `js/modules/cityManager.js` - Create CityDAO and replace city data with database storage
+3. `js/modules/eventManager.js` - Update event scheduling to persist in database
+4. `js/modules/timeManager.js` - Ensure game time is persisted properly
 
 #### UI Modules
-8. `js/ui/uiManager.js` - Update to handle database-driven state updates
-9. `js/ui/commandProcessor.js` - Update command handling to use database operations
-10. `js/ui/processor/venueCommands.js` - Update to use VenueService
-11. `js/ui/processor/staffCommands.js` - Update to use StaffDAO
-12. `js/ui/processor/inventoryCommands.js` - Update to use InventoryDAO
-13. `js/ui/processor/financeCommands.js` - Update to use TransactionDAO
-14. `js/ui/processor/gameCommands.js` - Update save/load to use GameService
+5. `js/ui/uiManager.js` - Update to handle database-driven state updates
+6. `js/ui/commandProcessor.js` - Update command handling to use database operations
+7. `js/ui/processor/venueCommands.js` - Update to use VenueService
+8. `js/ui/processor/staffCommands.js` - Update to use StaffDAO
+9. `js/ui/processor/inventoryCommands.js` - Update to use InventoryDAO
+10. `js/ui/processor/financeCommands.js` - Update to use TransactionDAO
+11. `js/ui/processor/gameCommands.js` - Update save/load to use GameService
 
 ## Code Organization & File Size Constraints
 
@@ -61,12 +63,18 @@ All modules must adhere to the following constraints:
    - First priority: Keep files under 700 lines by using appropriate subdirectories
    - Second priority: Reduce space by eliminating redundant files and optimizing code
 
-## File Consolidation and Optimization Plan
+## File Consolidation and Optimization Progress
 
-To optimize our codebase while respecting the 700-line constraint, we'll follow this approach:
-
-### Files to Eliminate
-1. **`js/utils/dataStore.js`** - Completely replace with database storage
+### Completed Optimizations
+1. **InventoryManager**
+   - Successfully restructured into a modular system with:
+     - `inventoryManager.js` (main coordinator)
+     - `inventory/inventoryGenerator.js` (default inventory creation)
+     - `inventory/inventoryOperations.js` (CRUD operations)
+   - Added new functionality (equipment repair and upgrades)
+   - Implemented proper database integration with fallbacks
+   - Eliminated redundancy between modules
+   - Each file is under 700 lines as required
 
 ### Redundancy Reduction Strategy
 1. **Venue Management**
@@ -113,10 +121,10 @@ To ensure we maintain functionality while optimizing:
    - Test thoroughly after each update
    - Keep file size under 700 lines
 
-2. **Hybrid Functionality**
-   - Each manager should maintain both database and in-memory capabilities
-   - Use a feature flag (`useDatabase`) to toggle between modes
-   - Ensure backward compatibility during transition
+2. **Database-Centric Functionality**
+   - Wherever possible, switch managers to use database-only operations
+   - Only retain in-memory capabilities if absolutely necessary for performance reasons
+   - If a feature flag (useDatabase) is required, ensure it's only used for critical fallback situations
 
 3. **Gradual Optimization**
    - First, make the module work with the database
@@ -128,19 +136,62 @@ To ensure we maintain functionality while optimizing:
    - Check file sizes and modularize if needed
    - Ensure all imports/exports are properly updated
 
+## Addressing Architectural Challenges
+
+### Circular Dependencies Resolution
+To address the issue of circular dependencies between modules, the database layer will help by:
+
+1. **Service-Oriented Architecture**
+   - Implementing a true service layer that handles complex operations
+   - Moving business logic from managers to appropriate services
+   - Using dependency injection for services instead of direct imports
+
+2. **Event-Based Communication**
+   - Implementing a publish/subscribe pattern for cross-module communication
+   - Leveraging database triggers for certain automatic actions
+   - Reducing direct module-to-module function calls
+
+3. **Data Access Abstraction**
+   - Creating a clear separation between data access and business logic
+   - Using the DAO pattern consistently across all modules
+   - Implementing query objects to encapsulate complex database operations
+
+4. **Data Flow Directionality**
+   - Establishing a clear unidirectional data flow
+   - Managers request data from services, not directly from other managers
+   - Services coordinate complex operations involving multiple DAOs
+
+### NotificationManager Integration
+To properly integrate the NotificationManager with database operations:
+
+1. **Database Event Notifications**
+   - Implement database triggers or observers for significant state changes
+   - Connect these observers to the NotificationManager to generate user notifications
+   - Categorize database events by severity and relevance for appropriate notification types
+
+2. **Transaction Feedback**
+   - Provide detailed success/failure feedback for database operations
+   - Use NotificationManager to convey transaction results to the user
+   - Include transaction IDs in notifications for troubleshooting
+
+3. **Data Validation Feedback**
+   - Channel database constraint violation errors through NotificationManager
+   - Translate technical database errors into user-friendly notifications
+   - Group related validation errors into a single notification when appropriate
+
 ## Next Steps (Immediate Priorities)
 
-1. Update `staffManager.js` to use StaffDAO
-   - Ensure it stays under 700 lines
-   - Optimize any redundant code
+1. Complete `staffManager.js` integration with StaffDAO
+   - Follow the same modular approach used for InventoryManager
+   - Consider breaking into specialized submodules if needed
 
-2. Update `financialManager.js` to use TransactionDAO
-   - Optimize `/finances/` subdirectory files
+2. Update `customerManager.js` to use CustomerDAO
+   - Review existing customer modules for optimization opportunities
    - Ensure no single file exceeds 700 lines
 
-3. Update `inventoryManager.js` to use InventoryDAO
-   - Optimize inventory management logic
-   - Focus on keeping file size manageable
+3. Create CityDAO and update `cityManager.js` to use database storage
+   - Implement proper data structure for city-specific regulations and properties
+   - Focus on keeping code modular and maintainable
 
 4. Begin optimizing venue-related files to remove redundancy
    - Maintain functionality while reducing code duplication

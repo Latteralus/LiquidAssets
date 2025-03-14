@@ -1,7 +1,5 @@
 # docs/structure.md
 
-Last Updated: March 13, 2025 11:15pm MST
-
 liquidassets/
 ├── main.js                # Entry point and main process for Electron application
 ├── preload.js             # Preload script for IPC communications
@@ -41,6 +39,9 @@ liquidassets/
     │   │   │   ├── transactionManager.js # Tracks transactions
     │   │   │   └── reportingManager.js  # Generates financial reports
     │   ├── inventoryManager.js    # Manages venue inventory
+    │   │   ├── inventory/         # Inventory-specific modules
+    │   │   │   ├── inventoryGenerator.js # Default inventory creation
+    │   │   │   └── inventoryOperations.js # CRUD operations
     │   ├── eventManager.js        # Handles random and scheduled events
     │   └── cityManager.js         # Manages city-specific properties
     ├── ui/                # User interface modules
@@ -78,7 +79,8 @@ liquidassets/
     │   │   ├── customerDAO.js     # Customer data access
     │   │   ├── transactionDAO.js  # Financial transaction data access
     │   │   ├── inventoryDAO.js    # Inventory data access
-    │   │   └── settingsDAO.js     # Game settings data access
+    │   │   ├── settingsDAO.js     # Game settings data access
+    │   │   └── cityDAO.js         # City data access
     │   └── services/             # Service layer
     │       ├── index.js           # Exports all services
     │       ├── venueService.js    # Venue-related business logic
