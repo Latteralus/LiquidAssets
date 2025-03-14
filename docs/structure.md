@@ -64,18 +64,25 @@ liquidassets/
     │       ├── animationManager.js # Handles animations
     │       └── layoutRenderer.js  # Renders venue layouts
     ├── database/          # Database system
+    │   ├── api.js                 # Main database API for the game
     │   ├── databaseManager.js     # Main database connection manager
     │   ├── migrationManager.js    # Handles database schema migrations
     │   ├── migrate-cli.js         # CLI tool for database migrations
     │   ├── migrations/            # Database migration files
     │   │   ├── migration_1.js     # Initial schema migration
     │   │   └── ...                # Additional migrations
-    │   └── dao/                   # Data Access Objects
-    │       ├── venueDAO.js        # Venue data access
-    │       ├── staffDAO.js        # Staff data access
-    │       ├── customerDAO.js     # Customer data access
-    │       ├── transactionDAO.js  # Financial transaction data access
-    │       └── inventoryDAO.js    # Inventory data access
+    │   ├── dao/                   # Data Access Objects
+    │   │   ├── index.js           # Exports all DAOs
+    │   │   ├── venueDAO.js        # Venue data access
+    │   │   ├── staffDAO.js        # Staff data access
+    │   │   ├── customerDAO.js     # Customer data access
+    │   │   ├── transactionDAO.js  # Financial transaction data access
+    │   │   ├── inventoryDAO.js    # Inventory data access
+    │   │   └── settingsDAO.js     # Game settings data access
+    │   └── services/             # Service layer
+    │       ├── index.js           # Exports all services
+    │       ├── venueService.js    # Venue-related business logic
+    │       └── gameService.js     # Game state management service
     └── utils/             # Utility functions
         ├── helpers.js             # General helper functions
-        └── dataStore.js           # Data storage utilities
+        └── dataStore.js           # Data storage utilities (deprecated, use database)
